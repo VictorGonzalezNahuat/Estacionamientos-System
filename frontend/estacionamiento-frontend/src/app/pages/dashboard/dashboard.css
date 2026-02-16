@@ -1,0 +1,299 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* ===============================
+   CONTENEDOR PRINCIPAL
+================================= */
+
+.dashboard-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-image: url('/parking.jpg');
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+.dashboard-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(15, 23, 42, 0.93),
+    rgba(37, 99, 235, 0.85)
+  );
+  z-index: 0;
+}
+
+/* ===============================
+   TOPBAR
+================================= */
+
+.topbar {
+  height: 90px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 50px;
+
+  position: relative;
+  z-index: 2;
+}
+
+.menu-left {
+  display: flex;
+  gap: 30px;
+}
+
+/* ===============================
+   DROPDOWN POR CLICK
+================================= */
+
+.dropdown {
+  position: relative;
+}
+
+.dropdown-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 22px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+
+.dropdown-btn:hover {
+  color: #93c5fd;
+}
+
+/* MENÚ */
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+
+  min-width: 260px;
+  padding: 12px 0;
+  margin-top: 10px;
+
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+
+  display: flex;
+  flex-direction: column;
+
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: all 0.25s ease;
+
+  z-index: 20;
+}
+
+/* 🔥 Se muestra cuando Angular agregue .open */
+.dropdown.open .dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dropdown-menu button {
+  background: transparent;
+  border: none;
+  color: white;
+  padding: 18px 28px;
+  text-align: left;
+  font-size: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.dropdown-menu button:hover {
+  background: rgba(37, 99, 235, 0.9);
+}
+
+/* ===============================
+   BOTÓN LOGOUT TOPBAR
+================================= */
+
+.logout-btn {
+  background: rgba(0, 0, 0, 0);
+  padding: 16px 28px;
+  border-radius: 14px;
+  font-size: 20px;
+  font-weight: 700;
+  transition: 0.2s ease;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  background: rgba(185, 28, 28, 1);
+}
+
+/* ===============================
+   LAYOUT
+================================= */
+
+.main-layout {
+  flex: 1;
+  display: flex;
+  position: relative;
+  z-index: 2;
+}
+
+/* ===============================
+   CONTENIDO CENTRAL
+================================= */
+
+.content-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.content-card {
+  width: 600px;
+  padding: 80px;
+  border-radius: 28px;
+
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20);
+
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.4);
+
+  text-align: center;
+  color: white;
+
+  animation: floatIn 0.6s ease-out;
+}
+
+.content-card h1 {
+  font-size: 56px;
+  margin-bottom: 20px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.content-card p {
+  font-size: 26px;
+  opacity: 0.95;
+  font-weight: 500;
+}
+
+/* ===============================
+   SIDEBAR
+================================= */
+
+.sidebar {
+  width: 400px;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  background: rgba(15, 23, 42, 0.75);
+
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-buttons {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.action-btn {
+  flex: 1;
+
+  font-size: 26px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+
+  transition: 0.25s ease;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.action-btn:hover {
+  background: rgba(37, 99, 235, 0.95);
+  transform: scale(1.02);
+}
+
+.logout {
+  background: rgba(127, 29, 29, 0.9);
+}
+
+.logout:hover {
+  background: rgba(185, 28, 28, 1);
+}
+
+/* ===============================
+   ANIMACIONES
+================================= */
+
+@keyframes floatIn {
+  from {
+    opacity: 0;
+    transform: translateY(25px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===============================
+   RESPONSIVE
+================================= */
+
+@media (max-width: 1000px) {
+  .sidebar {
+    display: none;
+  }
+
+  .content-card {
+    width: 90%;
+  }
+
+  .content-card h1 {
+    font-size: 42px;
+  }
+
+  .content-card p {
+    font-size: 22px;
+  }
+}

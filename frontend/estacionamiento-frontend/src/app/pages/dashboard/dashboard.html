@@ -1,0 +1,85 @@
+<div class="dashboard-container">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+
+    <div class="menu-left">
+
+      <!-- CATÁLOGOS -->
+      <div class="dropdown"
+           [class.open]="openMenu === 'catalogos'"
+           (click)="$event.stopPropagation()">
+
+        <button class="dropdown-btn"
+                (click)="toggleMenu('catalogos')">
+          Catálogos
+        </button>
+
+        <div class="dropdown-menu">
+          <button routerLink="usuarios" (click)="navigate()">Usuarios</button>
+          <button routerLink="tarifas" (click)="navigate()">Tarifas</button>
+          <button routerLink="vehiculos" (click)="navigate()">Tipos de Vehículo</button>
+        </div>
+      </div>
+
+      <!-- MOVIMIENTOS -->
+      <div class="dropdown"
+           [class.open]="openMenu === 'movimientos'"
+           (click)="$event.stopPropagation()">
+
+        <button class="dropdown-btn"
+                (click)="toggleMenu('movimientos')">
+          Movimientos
+        </button>
+
+        <div class="dropdown-menu">
+          <button routerLink="apertura" (click)="navigate()">Apertura de Turno</button>
+          <button routerLink="entrada-salida" (click)="navigate()">Entrada / Salida</button>
+          <button routerLink="cierre" (click)="navigate()">Cierre de Turno</button>
+        </div>
+      </div>
+
+      <!-- REPORTES -->
+      <div class="dropdown"
+           [class.open]="openMenu === 'reportes'"
+           (click)="$event.stopPropagation()">
+
+        <button class="dropdown-btn"
+                (click)="toggleMenu('reportes')">
+          Reportes
+        </button>
+
+        <div class="dropdown-menu">
+          <button routerLink="reporte-diario" (click)="navigate()">Reporte Diario</button>
+          <button routerLink="reporte-turno" (click)="navigate()">Reporte por Turno</button>
+        </div>
+      </div>
+
+      <!-- UTILERÍAS -->
+      <div class="dropdown"
+           [class.open]="openMenu === 'utilerias'"
+           (click)="$event.stopPropagation()">
+
+        <button class="dropdown-btn"
+                (click)="toggleMenu('utilerias')">
+          Utilerías
+        </button>
+
+        <div class="dropdown-menu">
+          <button routerLink="respaldo" (click)="navigate()">Respaldo</button>
+          <button routerLink="configuracion" (click)="navigate()">Configuración</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="menu-right">
+      <button class="logout-btn">Cerrar Sesión</button>
+    </div>
+
+  </header>
+
+  <!-- 🔥 AQUÍ CAMBIA TODO -->
+  <router-outlet></router-outlet>
+
+</div>

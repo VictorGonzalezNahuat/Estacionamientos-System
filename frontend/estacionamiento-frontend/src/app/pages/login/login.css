@@ -1,0 +1,139 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.login-wrapper {
+  height: 100vh;
+  width: 100%;
+  background-image: url('/parking.jpg');
+  background-size: cover;
+  background-position: center;
+  position: relative;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;     
+}
+
+
+/* Overlay azul completo */
+.background-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(15, 23, 42, 0.9),
+    rgba(37, 99, 235, 0.8)
+  );
+  z-index: 1;
+}
+
+/* Tarjeta más grande */
+.login-card {
+  position: relative;
+  z-index: 2;
+  width: 460px; /* más grande */
+  padding: 55px;
+  border-radius: 22px;
+
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+
+  display: flex;
+  flex-direction: column;
+  gap: 28px; /* más separación */
+}
+
+/* Título grande */
+.brand-title {
+  font-size: 38px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: 0.5px;
+}
+
+/* Subtítulo más visible */
+.subtitle {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Inputs grandes */
+.form-group input {
+  width: 100%;
+  padding: 18px 18px;
+  border-radius: 14px;
+  border: none;
+  outline: none;
+  font-size: 18px; /* letra grande */
+
+  background: rgba(255, 255, 255, 0.95);
+  transition: 0.2s ease;
+}
+
+.form-group input::placeholder {
+  font-size: 17px;
+  color: #6b7280;
+}
+
+.form-group input:focus {
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.5);
+}
+
+/* Botón grande y cómodo */
+.login-btn {
+  padding: 18px;
+  border: none;
+  border-radius: 14px;
+  background-color: #1d4ed8;
+  color: white;
+  font-size: 20px; /* más grande */
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.login-btn:hover {
+  background-color: #1e40af;
+  transform: translateY(-2px);
+}
+
+.error {
+  color: #ffd4d4;
+  font-size: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .login-wrapper {
+    justify-content: center;
+    padding-left: 0;
+  }
+
+  .login-card {
+    width: 90%;
+  }
+}
+
+.login-card {
+  animation: floatIn 0.6s ease-out;
+}
+
+@keyframes floatIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
