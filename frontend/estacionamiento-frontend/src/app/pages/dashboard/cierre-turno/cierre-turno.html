@@ -1,0 +1,80 @@
+<div class="turno-wrapper">
+
+  <div class="background-overlay"></div>
+
+  <div class="turno-card">
+    <div class="header">
+      <h1>Cierre de Turno</h1>
+      <p class="subtitle">Confirma tu contraseña para cerrar el turno</p>
+    </div>
+
+    <div class="info-section">
+
+    
+
+    <!-- Información del turno -->
+    <div class="shift-card">
+
+        <div class="shift-row">
+        <span class="label">Hora de apertura</span>
+        <span class="value">
+            {{ turno()?.hora_apertura }}
+        </span>
+        </div>
+
+
+        <div class="shift-row">
+        <span class="label">Hora de cierre</span>
+        <span class="value">
+            {{ now | date:'shortTime' }}
+        </span>
+        </div>
+
+        <div class="shift-row highlight">
+        <span class="label">Tiempo trabajado</span>
+        <span class="value">
+            ⏱ {{ duracion() }}
+        </span>
+        </div>
+
+    </div>
+
+    </div>
+
+    <!-- Botón Regresar -->
+    
+    <form [formGroup]="cierreForm" (ngSubmit)="cerrarTurno()">
+
+      <div class="form-group">
+        <label>Confirmar contraseña</label>
+        <div class="input-wrapper">
+          <input
+            type="password"
+            formControlName="password"
+            placeholder="Ingresa tu contraseña"
+          />
+        </div>
+      </div>
+
+      <button
+        class="primary-btn"
+        type="submit"
+        [disabled]="cierreForm.invalid || loading()"
+      >
+        {{ loading() ? 'Cerrando turno...' : 'Cerrar Turno' }}
+      </button>
+
+      
+
+    </form>
+    <button
+    type="button"
+    class="secondary-btn"
+    (click)="goDashboard()"
+    >
+    ← Regresar
+    </button>
+
+  </div>
+
+</div>

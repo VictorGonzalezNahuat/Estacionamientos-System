@@ -12,7 +12,7 @@ class TurnoResponse(BaseModel):
     hora_inicio: time
     hora_fin: time | None
     estado: str
-    fecha_fin: date
+    fecha_fin: Optional[date]
 
     class Config:
         orm_mode = True

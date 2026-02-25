@@ -5,6 +5,7 @@ from core.security import get_current_user
 from database import get_db
 from models.current_estacionamiento import CurrentEstacionamiento
 from models.history_estacionamiento import HistoryEstacionamiento
+from models.state_estacionamiento import StateEstacionamiento
 from models.tarifa import Tarifa
 from models.turno import Turno
 from models.usuario import Usuario
@@ -16,6 +17,12 @@ router = APIRouter()
 
 @router.post("/ingresar")
 def ingresar_auto(auto: CurrentEstacionamientoCreate, current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
+    
+    estado_estacionamiento = db.query(StateEstacionamiento).first()
+    
+    if estado_estacionamiento.total_espacios == estado_estacionamiento.espacios_ocupados:
+        raise HTTPException(status_code=409, detail="No hay espacios disponibles en estacionamiento")
+    
     turno = db.query(Turno).filter(Turno.encargado_id == current_user.id, Turno.estado == "activo").first()
 
     if not turno:
@@ -26,8 +33,6 @@ def ingresar_auto(auto: CurrentEstacionamientoCreate, current_user: Usuario = De
     if vehiculo:
         raise HTTPException(status_code=400, detail="Vehiculo ya registrado dentro del estacionamiento")
     
-    #TODO Verificar capacidad total del Estacionemiento
-
     tarifa = db.query(Tarifa).filter(Tarifa.default == 1).first()
 
     nuevo_vehiculo = CurrentEstacionamiento(
@@ -38,7 +43,7 @@ def ingresar_auto(auto: CurrentEstacionamientoCreate, current_user: Usuario = De
         fecha_entrada = date.today(),
         hora_entrada = datetime.now().time()
     )
-
+    estado_estacionamiento.espacios_ocupados += 1
     db.add(nuevo_vehiculo)
     db.commit()
     db.refresh(nuevo_vehiculo)
@@ -51,11 +56,17 @@ def sacar_auto(
     current_user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    
     placa = auto.placa.strip().upper()
 
     vehiculo = db.query(CurrentEstacionamiento).filter(
         CurrentEstacionamiento.placa == placa
     ).first()
+
+    estacionamiento = db.query(StateEstacionamiento).first()
+
+    if estacionamiento.espacios_ocupados == 0:
+        raise HTTPException(status_code=409, detail="No hay autos estacionados")
 
     if not vehiculo:
         raise HTTPException(status_code=404, detail="Vehiculo no encontrado")
@@ -94,7 +105,7 @@ def sacar_auto(
     # 🔹 1️⃣ DÍAS COMPLETOS
     dias = minutos_restantes // MINUTOS_DIA
     if dias > 0:
-        importe += dias * tarifa.dia
+        importe += dias * tarifa.diario
         minutos_restantes = minutos_restantes % MINUTOS_DIA
 
     # 🔹 2️⃣ MEDIOS DÍAS
@@ -139,6 +150,7 @@ def sacar_auto(
         placa=vehiculo.placa,
         importe=importe
     )
+    estacionamiento.espacios_ocupados -= 1
 
     # 🔹 Guardar historial y eliminar de current
     db.add(historial)

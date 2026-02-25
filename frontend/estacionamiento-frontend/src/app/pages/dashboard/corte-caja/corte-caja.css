@@ -1,0 +1,244 @@
+/* ===============================
+   LAYOUT BASE (duplicado del dashboard)
+================================= */
+
+.main-layout {
+  flex: 1;
+  display: flex;
+  position: relative;
+  z-index: 2;
+  min-height: calc(100vh - 90px);
+}
+
+.content-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.content-card {
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.4);
+  text-align: center;
+  color: white;
+  animation: floatIn 0.6s ease-out;
+}
+
+.sidebar {
+  width: 400px;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  background: rgba(15, 23, 42, 0.75);
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-buttons {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.action-btn {
+  flex: 1;
+  font-size: 20px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+  transition: 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.action-btn:hover {
+  background: rgba(37, 99, 235, 0.95);
+  transform: scale(1.02);
+}
+
+/* ===============================
+   CARD ESPECIAL PARA CORTE
+================================= */
+
+.corte-card {
+  width: 95%;
+  height: 90%;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  text-align: left; /* importante para tabla */
+}
+
+/* ===============================
+   FORM SUPERIOR
+================================= */
+
+.form-header {
+  display: flex;
+  gap: 25px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  color: white;
+  min-width: 220px;
+}
+
+
+.form-group label {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.form-group input {
+  height: 55px;
+  padding: 0 16px;
+  font-size: 20px;
+  border-radius: 12px;
+  border: none;
+  outline: none;
+}
+
+.form-actions {
+  display: flex;
+  gap: 20px;
+  margin-left: 20px;
+}
+
+
+.primary-btn {
+  background: rgba(37, 99, 235, 0.9);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  cursor: pointer;
+  transition: 0.2s;
+  height: 55px;
+  padding: 0 28px;
+  font-size: 20px;
+  border-radius: 14px;
+  font-weight: 700;
+}
+
+.primary-btn:hover {
+  transform: scale(1.05);
+}
+
+.secondary-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  color: white;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+/* ===============================
+   TABLA
+================================= */
+
+.table-container {
+  flex: 1;
+  overflow-y: auto;
+  background: rgba(255,255,255,0.08);
+  border-radius: 15px;
+  padding: 15px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  color: white;
+}
+
+thead {
+  background: rgba(37, 99, 235, 0.6);
+}
+
+th, td {
+  padding: 10px;
+  text-align: center;
+}
+
+tbody tr {
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+}
+
+tbody tr:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+/* ===============================
+   TOTALES
+================================= */
+
+.totals-section {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.total-box {
+  display: flex;
+  flex-direction: column;
+  color: white;
+  flex: 1;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.total-box input {
+  height: 55px;
+  font-size: 22px;
+  font-weight: 600;
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+}
+
+/* ===============================
+   SIDEBAR ACCIONES
+================================= */
+
+.actions-sidebar {
+  width: 300px;
+}
+
+.save {
+  background: rgba(16, 185, 129, 0.9);
+}
+
+.save:hover {
+  background: rgba(5, 150, 105, 1);
+}
+
+/* ===============================
+   ANIMACIÓN
+================================= */
+
+@keyframes floatIn {
+  from {
+    opacity: 0;
+    transform: translateY(25px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

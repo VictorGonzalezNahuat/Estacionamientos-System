@@ -1,1 +1,95 @@
-<p>apertura-turno works!</p>
+<div class="turno-wrapper">
+
+  <div class="background-overlay"></div>
+
+  <div class="turno-card">
+
+    <div class="header">
+      <h1>Apertura de Turno</h1>
+      <p class="subtitle">Confirma tu identidad para iniciar el turno</p>
+    </div>
+
+    <div *ngIf="!user(); else contenido" class="loading">
+      Cargando datos del usuario...
+    </div>
+
+    <ng-template #contenido>
+
+  <div class="info-section">
+
+    <!-- Tarjeta perfil -->
+    <div class="profile-card">
+      <div class="profile-icon">
+        👤
+      </div>
+
+      <div class="profile-data">
+        <span class="profile-name">
+          {{ user()?.nombre }}
+        </span>
+        <span class="profile-code">
+          Código: {{ user()?.codigo }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Tarjeta información del turno -->
+    <div class="shift-card">
+      <div class="shift-row">
+        <span class="label">Fecha</span>
+        <span class="value">{{ today | date:'fullDate' }}</span>
+      </div>
+
+      <div class="shift-row">
+        <span class="label">Hora de inicio</span>
+        <span class="value">{{ now | date:'shortTime' }}</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="form-section">
+
+  <form [formGroup]="aperturaForm" (ngSubmit)="abrirTurno()">
+
+    <div class="form-group">
+      <label>Confirmar contraseña</label>
+
+      <div class="input-wrapper">
+        <input
+          type="password"
+          formControlName="password"
+          placeholder="Ingresa tu contraseña"
+        />
+      </div>
+    </div>
+
+    <button
+      class="primary-btn"
+      type="submit"
+      [disabled]="aperturaForm.invalid || loading()"
+    >
+      {{ loading() ? 'Abriendo turno...' : 'Abrir Turno' }}
+    </button>
+
+  </form>
+
+  
+
+</div>
+
+<button
+    type="button"
+    class="secondary-btn"
+    (click)="goDashboard()"
+    >
+    ← Regresar
+    </button>
+
+
+</ng-template>
+
+
+  </div>
+
+</div>

@@ -76,13 +76,6 @@ def cerrar_turno(data: ConfirmPasswordRequest, current_user: Usuario = Depends(g
 
     if not existe_turno:
         raise HTTPException(status_code=404, detail="No existe turno abierto para este encargado")
-    
-    vehiculos_activos = db.query(CurrentEstacionamiento).filter(CurrentEstacionamiento.turno_id == existe_turno.id).count()
-
-    if vehiculos_activos > 0:
-        raise HTTPException(
-        status_code=400,
-        detail="No se puede cerrar el turno porque hay vehículos activos")
 
     existe_turno.hora_fin = datetime.now().time()
     existe_turno.fecha_fin = date.today()

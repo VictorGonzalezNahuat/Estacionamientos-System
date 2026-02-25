@@ -1,5 +1,5 @@
-import { Component, HostListener } from '@angular/core';
-import { RouterOutlet } from "@angular/router";
+import { Component, HostListener, inject } from '@angular/core';
+import { Router, RouterOutlet } from "@angular/router";
 
 @Component({
   selector: 'app-dashboard',
@@ -8,6 +8,8 @@ import { RouterOutlet } from "@angular/router";
   imports: [RouterOutlet],
 })
 export class Dashboard {
+
+  private router = inject(Router);
 
   openMenu: string | null = null;
 
@@ -22,6 +24,11 @@ export class Dashboard {
   @HostListener('document:click')
   closeMenu(): void {
     this.openMenu = null;
+  }
+
+  logout(): void {
+    localStorage.removeItem('token');
+    this.router.navigate(['/login']);
   }
 
 }

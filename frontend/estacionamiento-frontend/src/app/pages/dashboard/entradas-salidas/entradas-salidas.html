@@ -1,0 +1,134 @@
+<div class="entradas-wrapper">
+
+  <div class="background-overlay"></div>
+
+  <div class="layout">
+    <div class="main-section">
+        <div class="entrada-wrapper">
+
+            <div class="entrada-card">
+
+                <h1>Ingreso de Vehículo</h1>
+
+                <!-- Información general -->
+                <div class="info-grid">
+
+                <div class="info-box">
+                    <h3>Usuario</h3>
+                    <p>{{ user()?.nombre }}</p>
+                </div>
+
+                <div class="info-box">
+                    <h3>Turno</h3>
+                    <p>ID: {{ turno()?.turno_id }}</p>
+                </div>
+
+                <div class="info-box">
+                    <h3>Fecha</h3>
+                    <p>{{ now() | date:'fullDate' }}</p>
+                </div>
+
+                <div class="info-box">
+                    <h3>Hora</h3>
+                    <p>{{ now() | date:'shortTime' }}</p>
+                </div>
+
+                </div>
+
+                <!-- Tarifa -->
+                <div class="tarifa-box" *ngIf="tarifa()">
+                <h3>Tarifa Actual ({{ tarifa()?.tipo_vehiculo }})</h3>
+
+                <div class="tarifa-grid">
+                    <div>$ {{ tarifa()?.hora }} / hora</div>
+                    <div>$ {{ tarifa()?.fraccion }} fracción</div>
+                    <div>$ {{ tarifa()?.medio_dia }} medio día</div>
+                    <div>$ {{ tarifa()?.diario }} día</div>
+                </div>
+                </div>
+
+                <!-- Formulario -->
+                <form [formGroup]="form" (ngSubmit)="ingresarVehiculo()">
+
+                <input
+                    #placaInput
+                    type="text"
+                    formControlName="placa"
+                    placeholder="Ingresa la placa"
+                    class="placa-input"
+                />
+
+                <button type="submit" [disabled]="form.invalid || loading()">
+                    {{ loading() ? 'Ingresando...' : 'Ingresar Vehículo' }}
+                </button>
+
+                </form>
+
+            </div>
+
+            </div>
+    </div>
+
+    <!-- COLUMNA DERECHA -->
+    <div class="sidebar-section">
+        <button class="btn-back" (click)="goDashboard()">
+        ← Regresar
+        </button>
+
+        <div class="estado-box" *ngIf="estado()">
+
+    <h3>Estado del Estacionamiento</h3>
+
+    <div class="estado-grid">
+        <div>
+            <span>Total</span>
+            <strong>{{ estado()?.total_espacios }}</strong>
+            </div>
+
+            <div>
+            <span>Ocupados</span>
+            <strong>{{ estado()?.espacios_ocupados }}</strong>
+            </div>
+
+            <div>
+            <span>Disponibles</span>
+            <strong>
+                {{
+                estado()?.total_espacios - estado()?.espacios_ocupados
+                }}
+            </strong>
+            </div>
+        </div>
+
+        </div>
+
+
+        <h2>Autos Dentro ({{ estacionados().length }})</h2>
+
+        <div class="autos-list">
+
+        <div class="auto-card"
+            *ngFor="let auto of estacionados()">
+
+            <div class="placa">
+            {{ auto.placa }}
+            </div>
+
+            <div class="detalle">
+            <span>{{ auto.fecha_entrada }}</span>
+            <span>{{ auto.hora_entrada }}</span>
+            </div>
+
+        </div>
+
+        </div>
+
+        
+
+    </div>
+
+    </div>
+
+
+</div>
+

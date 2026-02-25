@@ -1,15 +1,22 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
+import { ConfigService } from './config.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
 
-  private apiUrl = 'http://localhost:8000'; // cambia si es necesario
+  private apiUrl: string;
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+    private configService: ConfigService
+  ) {
+    this.apiUrl = this.configService.apiUrl;
+  }
 
   login(credentials: { username: string; password: string }) {
     const body = new URLSearchParams();
@@ -17,16 +24,15 @@ export class AuthService {
     body.set('password', credentials.password);
 
     return this.http.post<any>(
-        `${this.apiUrl}/auth/login`,
-        body.toString(),
-        {
+      `${this.apiUrl}/auth/login`,
+      body.toString(),
+      {
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
+          'Content-Type': 'application/x-www-form-urlencoded'
         }
-        }
+      }
     );
-    }
-
+  }
 
   saveToken(token: string) {
     localStorage.setItem('token', token);

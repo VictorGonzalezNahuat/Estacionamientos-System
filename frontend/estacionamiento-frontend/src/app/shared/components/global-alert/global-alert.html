@@ -1,0 +1,59 @@
+<div *ngIf="alertService.alertState() as alert" class="custom-alert-overlay">
+
+  <div class="custom-alert"
+       [class.success]="alert.type === 'success'"
+       [class.error]="alert.type === 'error'"
+       [class.info]="alert.type === 'info'">
+
+    <!-- ICONO SOLO PARA SUCCESS / ERROR -->
+    <div class="alert-icon" *ngIf="alert.type !== 'info'">
+      {{ alert.type === 'success' ? '✔' : '⚠' }}
+    </div>
+
+    <!-- MENSAJE SIMPLE -->
+    <div *ngIf="alert.message">
+      {{ alert.message }}
+    </div>
+
+    <!-- MODO INFO (DETALLADO) -->
+   <div *ngIf="alert.type === 'info'" class="info-container">
+
+  <h2 class="info-title">
+    {{ alert.title }}
+  </h2>
+
+  <div class="info-grid">
+
+    <div class="info-card card-green">
+      <span class="info-label">Importe</span>
+      <span class="info-value">
+        $ {{ alert.data?.importe }}
+      </span>
+    </div>
+
+    <div class="info-card card-blue">
+      <span class="info-label">Fecha</span>
+      <span class="info-value">
+        {{ alert.data?.fecha_salida }}
+      </span>
+    </div>
+
+    <div class="info-card card-blue">
+      <span class="info-label">Hora</span>
+      <span class="info-value">
+        {{ alert.data?.hora_salida }}
+      </span>
+    </div>
+
+  </div>
+
+</div>
+
+    <!-- BOTÓN GLOBAL (para TODOS los tipos) -->
+    <button class="alert-button"
+            (click)="alertService.close()">
+      Aceptar
+    </button>
+
+  </div>
+</div>

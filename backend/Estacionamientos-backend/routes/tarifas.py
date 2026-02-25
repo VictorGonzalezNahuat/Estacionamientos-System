@@ -1,25 +1,30 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from core.security import get_current_user
 from database import get_db
 from models.tarifa import Tarifa
+from models.usuario import Usuario
 from schemas.tarifa import TarifaBase, TarifaRespose
 
 router = APIRouter()
 
 
+@router.get("/default")
+def tarifa_default(current_user: Usuario = Depends(get_current_user),db: Session = Depends(get_db)):
+    return db.query(Tarifa).filter(Tarifa.default == 1).first()
 
 @router.get("/", response_model=list[TarifaRespose])
-def listar_tarifas(db: Session = Depends(get_db)):
+def listar_tarifas(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
     return db.query(Tarifa).filter(Tarifa.eliminado==0).all()
 
 @router.get("/deleted", response_model=list[TarifaRespose])
-def listar_tarifas_eliminadas(db: Session = Depends(get_db)):
+def listar_tarifas_eliminadas(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
     return db.query(Tarifa).filter(Tarifa.eliminado == 1).all()
 
 
 @router.post("/", response_model=TarifaRespose)
-def crear_tarifa(tarifa: TarifaBase, db: Session = Depends(get_db)):
+def crear_tarifa( tarifa: TarifaBase,current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
     existe = db.query(Tarifa).filter(Tarifa.numero == tarifa.numero).first()
     if existe:
         raise HTTPException(status_code=400, detail="El número de la tarifa ya existe")
@@ -41,7 +46,7 @@ def crear_tarifa(tarifa: TarifaBase, db: Session = Depends(get_db)):
     return nueva_tarifa
 
 @router.put("/{numero}", response_model=TarifaRespose)
-def editar_tarifa(numero: int, tarifa: TarifaBase, db: Session = Depends(get_db)):
+def editar_tarifa(numero: int, tarifa: TarifaBase, current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
     existe_tarifa = db.query(Tarifa).filter(Tarifa.numero == numero, Tarifa.eliminado == 0).first()
 
     if not existe_tarifa:
@@ -60,7 +65,7 @@ def editar_tarifa(numero: int, tarifa: TarifaBase, db: Session = Depends(get_db)
     return existe_tarifa
 
 @router.delete("/{numero}/", response_model=TarifaRespose)
-def eliminar_tarifa(numero: int, db:Session = Depends(get_db)):
+def eliminar_tarifa(numero: int, current_user: Usuario = Depends(get_current_user), db:Session = Depends(get_db)):
     existe_tarifa = db.query(Tarifa).filter(Tarifa.numero == numero, Tarifa.eliminado == 0).first()
 
     if not existe_tarifa:
@@ -74,7 +79,7 @@ def eliminar_tarifa(numero: int, db:Session = Depends(get_db)):
     return existe_tarifa
 
 @router.patch("/{numero}/restore", response_model=TarifaRespose)
-def restaurar_tarifa(numero: int, db:Session=Depends(get_db)):
+def restaurar_tarifa(numero: int, current_user: Usuario = Depends(get_current_user), db:Session=Depends(get_db)):
     existe_tarifa_eliminada = db.query(Tarifa).filter(Tarifa.numero == numero, Tarifa.eliminado == 1).first()
 
     if not existe_tarifa_eliminada:

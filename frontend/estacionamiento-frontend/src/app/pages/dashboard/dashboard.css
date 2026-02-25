@@ -29,6 +29,7 @@
     rgba(37, 99, 235, 0.85)
   );
   z-index: 0;
+  pointer-events: none; /* 👈 esto lo arregla */
 }
 
 /* ===============================
@@ -48,7 +49,8 @@
   padding: 0 50px;
 
   position: relative;
-  z-index: 2;
+  z-index: 10000;
+  isolation: isolate; 
 }
 
 .menu-left {
@@ -106,7 +108,7 @@
   transform: translateY(10px);
   transition: all 0.25s ease;
 
-  z-index: 20;
+  z-index: 9999;
 }
 
 /* 🔥 Se muestra cuando Angular agregue .open */

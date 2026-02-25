@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import engine
 
 # Routers
-from routes import auth, current_estacionamientos, tarifas, turnos, usuarios
+from routes import auth, cortes_caja, current_estacionamientos, history_estacionamientos, state_estacionamientos, tarifas, turnos, usuarios
 
 # from app.routes import usuarios, tarifas, turnos
 
@@ -40,4 +40,6 @@ app.include_router(usuarios.router, prefix="/usuarios", tags=["Usuarios"])
 app.include_router(tarifas.router, prefix="/tarifas", tags=["Tarifas"])
 app.include_router(turnos.router, prefix="/turnos", tags=["Turnos"])
 app.include_router(current_estacionamientos.router, prefix="/estacionamiento", tags=["Estacionamiento"])
-
+app.include_router(state_estacionamientos.router, prefix="/estacion", tags=["Estado_estacionamiento"])
+app.include_router(cortes_caja.router, prefix="/corte-caja", tags=["Corte_de_cajas"])
+app.include_router(history_estacionamientos.router, prefix="/history", tags=["Historial"])

@@ -1,0 +1,106 @@
+<form [formGroup]="corteForm" class="main-layout">
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="content-area">
+
+    <div class="content-card corte-card">
+
+      <!-- ENCABEZADO -->
+      <div class="form-header">
+
+        <div class="form-group">
+          <label>Fecha</label>
+          <input type="date" formControlName="fecha">
+        </div>
+
+        <div class="form-group">
+          <label>Turno</label>
+          <input type="text" placeholder="Todos por defecto" formControlName="turno">
+        </div>
+
+        <div class="form-group">
+          <label>Encargado</label>
+          <input type="text" placeholder="Nombre del encargado" formControlName="encargado">
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="primary-btn" (click)="aceptar()">Aceptar</button>
+          <button type="button" class="secondary-btn" (click)="regresar()">Regresar</button>
+        </div>
+
+      </div>
+
+      <!-- TABLA -->
+      <div class="table-container">
+
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Placa</th>
+              <th>Turno</th>
+              <th>F.Entrada</th>
+              <th>F.Salida</th>
+              <th>H.Entrada</th>
+              <th>H.Salida</th>
+              <th>Tiempo</th>
+              <th>Importe</th>
+            </tr>
+          </thead>
+
+          <tbody formArrayName="registros">
+            <tr *ngFor="let item of registros.controls; let i = index"
+                [formGroupName]="i">
+
+              <td>{{ item.get('id')?.value }}</td>
+              <td>{{ item.get('placa')?.value }}</td>
+              <td>{{ item.get('turnoId')?.value}}</td>
+              <td>{{ item.get('fechaEntrada')?.value }}</td>
+              <td>{{ item.get('fechaSalida')?.value }}</td>
+              <td>{{ item.get('horaEntrada')?.value }}</td>
+              <td>{{ item.get('horaSalida')?.value }}</td>
+              <td>{{ item.get('tiempo')?.value }}</td>
+              <td>{{ item.get('importe')?.value | currency }}</td>
+
+            </tr>
+          </tbody>
+
+        </table>
+
+      </div>
+
+      <!-- TOTALES -->
+      <div class="totals-section">
+
+        <div class="total-box">
+          <label>Total Efectivo</label>
+          <input type="text" [value]="corteForm.get('totalEfectivo')?.value | currency:'MXN':'symbol':'1.2-2'"  readonly>
+        </div>
+
+        <div class="total-box">
+          <label>Total Tarjeta</label>
+          <input type="text" [value]="corteForm.get('totalTarjeta')?.value | currency:'MXN':'symbol':'1.2-2'"  readonly>
+        </div>
+
+        <div class="total-box">
+          <label>Total General</label>
+          <input type="text" [value]="corteForm.get('totalGeneral')?.value | currency:'MXN':'symbol':'1.2-2'"  readonly>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar actions-sidebar">
+    <div class="sidebar-buttons">
+      <button type="button" class="action-btn" (click)="ordenarAZ()">Ordenar A-Z</button>
+      <button type="button" class="action-btn" (click)="exportarExcel()">Exportar Excel</button>
+      <button type="button" class="action-btn" (click)="imprimir()">Imprimir</button>
+      <button type="button" class="action-btn" (click)="duplicarCorte()">Duplicado</button>
+      <button type="button" class="action-btn save" (click)="guardarEnSistema()">Guardar en Sistema</button>
+    </div>
+  </aside>
+
+</form>

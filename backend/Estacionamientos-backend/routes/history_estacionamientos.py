@@ -18,7 +18,43 @@ router = APIRouter()
 def historial_hoy(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
 
     hoy = date.today()
-    historial = db.query(HistoryEstacionamiento).filter(HistoryEstacionamiento.fecha_salida == hoy)
+    historial = db.query(HistoryEstacionamiento).filter(HistoryEstacionamiento.fecha_salida == hoy).all()
+    return historial
+
+from typing import Optional
+from fastapi import HTTPException
+
+@router.get("/dia/filtrar")
+def historial_dia_con_filtro(
+    fecha: date,
+    turno: Optional[int] = None,
+    encargado: Optional[str] = None,
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    
+    query = db.query(HistoryEstacionamiento).filter(
+        HistoryEstacionamiento.fecha_salida == fecha
+    )
+    if turno is not None:
+        query = query.filter(HistoryEstacionamiento.turno_id == turno)
+        current_turno = db.query(Turno).filter(Turno.id == turno).first()
+        
+        if not current_turno:
+            raise HTTPException(status_code=404, detail="No se ha encontrado el turno")
+
+        if current_turno.estado != "cerrado":
+            raise HTTPException(status_code=409, detail="El turno no se ha cerrado aun")
+        
+    if encargado:
+        usuario = db.query(Usuario).filter(Usuario.nombre == encargado).first()
+
+        if not usuario:
+            raise HTTPException(status_code=404, detail="Encargado no encontrado")
+
+        query = query.filter(HistoryEstacionamiento.encargado_id == usuario.id)
+
+    historial = query.all()
 
     return historial
 

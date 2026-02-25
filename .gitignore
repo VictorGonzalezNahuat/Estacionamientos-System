@@ -1,0 +1,41 @@
+# Cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pyc
+
+# IDE cache
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS cache
+.DS_Store
+Thumbs.db
+
+# Node cache
+node_modules/
+.npm
+
+# General cache
+.cache/
+*.cache

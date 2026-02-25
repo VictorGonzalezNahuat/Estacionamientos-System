@@ -1,0 +1,279 @@
+.entradas-wrapper {
+  height: 100vh;
+  width: 100%;
+  background-image: url('/parking.jpg');
+  background-size: cover;
+  background-position: center;
+  position: relative;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.background-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(15, 23, 42, 0.92),
+    rgba(37, 99, 235, 0.85)
+  );
+  z-index: 1;
+}
+
+.entrada-card {
+  width: 900px;
+  padding: 50px;
+  border-radius: 24px;
+
+  background: rgba(255,255,255,0.18);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+
+  border: 1px solid rgba(255,255,255,0.25);
+  box-shadow: 0 30px 70px rgba(0,0,0,0.4);
+
+  color: white;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+
+  animation: floatIn 0.5s ease-out;
+}
+
+.entrada-card h1 {
+  font-size: 34px;
+  font-weight: 700;
+}
+
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.info-box {
+  background: rgba(255,255,255,0.14);
+  padding: 18px;
+  border-radius: 18px;
+  text-align: center;
+  border: 1px solid rgba(255,255,255,0.2);
+  transition: 0.25s ease;
+}
+
+.info-box:hover {
+  background: rgba(255,255,255,0.2);
+  transform: translateY(-2px);
+}
+
+
+.tarifa-box {
+  background: rgba(255,255,255,0.14);
+  padding: 22px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.tarifa-box h3 {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+
+.tarifa-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.placa-input {
+  width: 100%;
+  padding: 28px;
+  font-size: 30px;
+  border-radius: 18px;
+  border: none;
+  outline: none;
+  text-align: center;
+  letter-spacing: 4px;
+  font-weight: 600;
+
+  background: rgba(255,255,255,0.96);
+  transition: 0.25s ease;
+}
+
+.placa-input:focus {
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.4);
+  transform: scale(1.02);
+}
+
+
+button {
+  margin-top: 20px;
+  padding: 20px;
+  font-size: 20px;
+  border-radius: 18px;
+  border: none;
+
+  background: linear-gradient(
+    135deg,
+    #2563eb,
+    #1e40af
+  );
+
+  color: white;
+  font-weight: 700;
+
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 30px rgba(0,0,0,0.35);
+}
+
+
+.layout {
+  position: relative;
+  z-index: 2;
+
+  display: flex;
+  gap: 30px;
+  padding: 40px;
+
+  width: 100%;
+  max-width: 1500px;
+  height: 100%;
+}
+
+.main-section {
+  flex: 2;
+  display: flex;
+  justify-content: center;
+}
+
+.sidebar-section {
+  flex: 1;
+  max-width: 420px;
+
+  height: 85vh;   /* 🔥 clave */
+  display: flex;
+  flex-direction: column;
+
+  background: rgba(255,255,255,0.16);
+  backdrop-filter: blur(18px);
+  border-radius: 24px;
+  padding: 25px;
+
+  border: 1px solid rgba(255,255,255,0.25);
+  box-shadow: 0 30px 60px rgba(0,0,0,0.35);
+}
+
+
+
+.sidebar-section h2 {
+  margin-bottom: 20px;
+  font-size: 22px;
+}
+
+.autos-list {
+  flex: 1;           
+  overflow-y: auto;    
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+
+  padding-right: 5px;  
+}
+
+
+.auto-card {
+  background: rgba(255,255,255,0.18);
+  border-radius: 16px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  transition: 0.2s ease;
+}
+
+.auto-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255,255,255,0.22);
+}
+
+.placa {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.detalle {
+  font-size: 14px;
+  opacity: 0.85;
+  display: flex;
+  justify-content: space-between;
+}
+
+.estado-box {
+  background: rgba(255,255,255,0.18);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 25px;
+  backdrop-filter: blur(12px);
+}
+
+.estado-box h3 {
+  font-size: 18px;
+  margin-bottom: 15px;
+}
+
+.estado-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  text-align: center;
+  gap: 10px;
+}
+
+.estado-grid span {
+  font-size: 13px;
+  opacity: 0.8;
+  display: block;
+}
+
+.estado-grid strong {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.btn-back {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  padding: 10px 18px;
+  border-radius: 12px;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+  margin-bottom: 20px;
+}
+
+.btn-back:hover {
+  background: rgba(255,255,255,0.35);
+  transform: translateY(-2px);
+}
+
+@keyframes floatIn {
+  from {
+    opacity: 0;
+    transform: translateY(25px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
