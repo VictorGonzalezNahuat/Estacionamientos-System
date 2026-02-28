@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, ElementRef, ViewChild } from '@angular/core';
+import { Component, inject, signal, OnInit, ElementRef, ViewChild, OnDestroy } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -14,13 +14,15 @@ import { Router } from '@angular/router';
   templateUrl: './entradas-salidas.html',
   styleUrl: './entradas-salidas.css'
 })
-export class EntradasSalidas implements OnInit {
+export class EntradasSalidas implements OnInit, OnDestroy{
 
   private http = inject(HttpClient);
   private fb = inject(FormBuilder);
   private config = inject(ConfigService);
   private alert = inject(AlertService);
   private router = inject(Router);
+  private relojInterval: any;
+  private refreshInterval: any;
 
 
   @ViewChild('placaInput') placaInput!: ElementRef<HTMLInputElement>;
@@ -36,7 +38,7 @@ export class EntradasSalidas implements OnInit {
 
 
   form = this.fb.group({
-    placa: ['', [Validators.required, Validators.minLength(5)]]
+    placa: ['', [Validators.required]]
   });
 
   goDashboard() {
@@ -71,10 +73,11 @@ export class EntradasSalidas implements OnInit {
   }
 
   iniciarReloj() {
-    setInterval(() => {
+    this.relojInterval = setInterval(() => {
       this.now.set(new Date());
     }, 1000);
   }
+
 
   ingresarVehiculo() {
     if (this.form.invalid) return;
@@ -139,10 +142,14 @@ export class EntradasSalidas implements OnInit {
     });
   }
   iniciarAutoRefresh() {
-    setInterval(() => {
+    this.refreshInterval = setInterval(() => {
       this.cargarEstacionados();
       this.cargarEstado();
     }, 10000);
+  }
+  ngOnDestroy() {
+    clearInterval(this.relojInterval);
+    clearInterval(this.refreshInterval);
   }
 
 }

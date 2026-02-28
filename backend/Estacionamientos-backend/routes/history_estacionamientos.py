@@ -18,8 +18,14 @@ router = APIRouter()
 def historial_hoy(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
 
     hoy = date.today()
-    historial = db.query(HistoryEstacionamiento).filter(HistoryEstacionamiento.fecha_salida == hoy).all()
-    return historial
+    historiales = db.query(HistoryEstacionamiento).filter(HistoryEstacionamiento.fecha_salida == hoy).all()
+    for historial in historiales:
+        historial_turno = db.query(Turno).filter(Turno.id == historial.turno_id).first()
+        if historial_turno.estado != "cerrado":
+            raise HTTPException(status_code=409, detail="El turno no se ha cerrado aun")
+
+    
+    return historiales
 
 from typing import Optional
 from fastapi import HTTPException
@@ -56,6 +62,17 @@ def historial_dia_con_filtro(
 
     historial = query.all()
 
+    # Obtener IDs únicos de turno del historial
+    turno_ids = {h.turno_id for h in historial}
+
+    for turno_id in turno_ids:
+        turno_obj = db.query(Turno).filter(Turno.id == turno_id).first()
+
+        if not turno_obj:
+            raise HTTPException(status_code=404, detail="Turno no encontrado")
+
+        if turno_obj.estado != "cerrado":
+            raise HTTPException(status_code=409, detail="Hay turnos sin cerrar en el historial")
     return historial
 
 @router.get("/rango")
@@ -69,9 +86,14 @@ def historial_rango(
     if desde > hasta:
         raise HTTPException(status_code=400, detail="Rango de fechas inválido")
 
-    historial = db.query(HistoryEstacionamiento).filter(
+    historiales = db.query(HistoryEstacionamiento).filter(
         HistoryEstacionamiento.fecha_salida >= desde,
         HistoryEstacionamiento.fecha_salida <= hasta
     ).all()
 
-    return historial
+    for historial in historiales:
+        historial_turno = db.query(Turno).filter(Turno.id == historial.turno_id).first()
+        if historial_turno.estado != "cerrado":
+            raise HTTPException(status_code=409, detail="El turno no se ha cerrado aun")
+
+    return historiales

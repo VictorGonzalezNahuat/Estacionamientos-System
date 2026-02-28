@@ -114,7 +114,7 @@ export class CorteCaja implements OnInit {
           this.alertService.error(err.error?.detail || 'Recurso no encontrado');
         }
         else if (statusCode === 409) {
-          this.alertService.error('El turno seleccionado aún no ha sido cerrado');
+          this.alertService.error('Hay turnos sin cerrar en el historial de busqueda');
         }
         else if (statusCode === 401) {
           this.alertService.error('Sesión expirada. Inicia sesión nuevamente');
