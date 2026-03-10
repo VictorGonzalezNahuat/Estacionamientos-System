@@ -9,11 +9,11 @@
       <p class="subtitle">Confirma tu identidad para iniciar el turno</p>
     </div>
 
-    <div *ngIf="!user(); else contenido" class="loading">
+    @if (!user()) {
+    <div class="loading">
       Cargando datos del usuario...
     </div>
-
-    <ng-template #contenido>
+    } @else {
 
   <div class="info-section">
 
@@ -48,46 +48,24 @@
 
   </div>
 
-  <div class="form-section">
+  <button
+    class="primary-btn"
+    type="button"
+    (click)="abrirTurno()"
+    [disabled]="loading()"
+  >
+    {{ loading() ? 'Abriendo turno...' : 'Abrir Turno' }}
+  </button>
 
-  <form [formGroup]="aperturaForm" (ngSubmit)="abrirTurno()">
-
-    <div class="form-group">
-      <label>Confirmar contraseña</label>
-
-      <div class="input-wrapper">
-        <input
-          type="password"
-          formControlName="password"
-          placeholder="Ingresa tu contraseña"
-        />
-      </div>
-    </div>
-
-    <button
-      class="primary-btn"
-      type="submit"
-      [disabled]="aperturaForm.invalid || loading()"
-    >
-      {{ loading() ? 'Abriendo turno...' : 'Abrir Turno' }}
-    </button>
-
-  </form>
-
-  
-
-</div>
-
-<button
+  <button
     type="button"
     class="secondary-btn"
     (click)="goDashboard()"
-    >
+  >
     ← Regresar
-    </button>
+  </button>
 
-
-</ng-template>
+    }
 
 
   </div>

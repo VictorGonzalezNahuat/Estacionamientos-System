@@ -1,6 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
 
@@ -8,19 +7,17 @@ import { Router } from '@angular/router';
   selector: 'app-login',
   templateUrl: './login.html',
   styleUrl: './login.css',
-  imports: [FormsModule,
-    CommonModule],
+  imports: [FormsModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Login{
+
+  private authService = inject(AuthService);
+  private router = inject(Router);
 
   username = '';
   password = '';
   errorMessage = '';
-
-  constructor(
-    private authService: AuthService,
-    private router: Router
-  ) {}
 
   onLogin() {
     this.authService.login({

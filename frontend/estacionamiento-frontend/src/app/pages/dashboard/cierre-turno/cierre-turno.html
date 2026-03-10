@@ -43,36 +43,21 @@
 
     <!-- Botón Regresar -->
     
-    <form [formGroup]="cierreForm" (ngSubmit)="cerrarTurno()">
-
-      <div class="form-group">
-        <label>Confirmar contraseña</label>
-        <div class="input-wrapper">
-          <input
-            type="password"
-            formControlName="password"
-            placeholder="Ingresa tu contraseña"
-          />
-        </div>
-      </div>
-
-      <button
-        class="primary-btn"
-        type="submit"
-        [disabled]="cierreForm.invalid || loading()"
-      >
-        {{ loading() ? 'Cerrando turno...' : 'Cerrar Turno' }}
-      </button>
-
-      
-
-    </form>
     <button
-    type="button"
-    class="secondary-btn"
-    (click)="goDashboard()"
+      class="primary-btn"
+      type="button"
+      (click)="cerrarTurno()"
+      [disabled]="loading()"
     >
-    ← Regresar
+      {{ loading() ? 'Cerrando turno...' : 'Cerrar Turno' }}
+    </button>
+
+    <button
+      type="button"
+      class="secondary-btn"
+      (click)="goDashboard()"
+    >
+      ← Regresar
     </button>
 
   </div>

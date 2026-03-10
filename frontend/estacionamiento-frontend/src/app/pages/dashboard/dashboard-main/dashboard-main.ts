@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 @Component({
@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
   imports: [RouterLink],
   templateUrl: './dashboard-main.html',
   styleUrl: './dashboard-main.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardMain {
 

@@ -1,13 +1,14 @@
-import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { AlertService } from '../../../core/services/alert';
 
 @Component({
   selector: 'app-global-alert',
   standalone: true,
-  imports: [CommonModule],
+  imports: [FormsModule],
   templateUrl: './global-alert.html',
-  styleUrls: ['./global-alert.css']
+  styleUrls: ['./global-alert.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GlobalAlert {
 

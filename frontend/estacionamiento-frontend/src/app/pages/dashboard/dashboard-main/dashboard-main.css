@@ -22,7 +22,7 @@
   position: relative;
 }
 
-/* Tarjeta central estilo glass */
+/* Tarjeta central mejorada */
 .content-card {
   width: 600px;
   padding: 80px;
@@ -33,41 +33,48 @@
   -webkit-backdrop-filter: blur(20px);
 
   border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.4);
+  border-top: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 
+    0 30px 70px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.2);
 
   text-align: center;
   color: white;
 
-  animation: floatIn 0.6s ease-out;
+  animation: floatIn 0.8s ease-out;
 }
 
 .content-card h1 {
-  font-size: 30px;
+  font-size: 32px;
   margin-bottom: 20px;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .content-card p {
-  font-size: 26px;
-  opacity: 0.95;
+  font-size: 18px;
+  opacity: 0.9;
   font-weight: 500;
+  letter-spacing: 0.5px;
 }
 
 /* ===============================
-   SIDEBAR DERECHA
+   SIDEBAR DERECHA MEJORADA
 ================================= */
 
 .sidebar {
   width: 400px;
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: rgba(15, 23, 42, 0.85);
 
-  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  border-left: 2px solid rgba(37, 99, 235, 0.3);
+  box-shadow: -8px 0 20px rgba(0, 0, 0, 0.2);
 
   display: flex;
   flex-direction: column;
+  transition: all 0.3s ease;
 }
 
 /* Botones ocupando todo el alto */
@@ -77,38 +84,65 @@
   flex-direction: column;
 }
 
-/* BOTONES GRANDES Y ACCESIBLES */
+/* BOTONES CON ESTADOS Y COLORES */
 .action-btn {
   flex: 1;
 
-  font-size: 26px;
+  font-size: 20px;
   font-weight: 700;
+  letter-spacing: 0.5px;
   border: none;
   cursor: pointer;
 
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(37, 99, 235, 0.25);
   color: white;
 
-  transition: 0.25s ease;
+  transition: all 0.3s ease;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 4px solid rgba(37, 99, 235, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+.action-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  transition: left 0.3s ease;
+  z-index: -1;
 }
 
 .action-btn:hover {
-  background: rgba(37, 99, 235, 0.95);
-  transform: scale(1.02);
+  background: rgba(37, 99, 235, 0.45);
+  transform: translateX(4px);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+}
+
+.action-btn:hover::before {
+  left: 0;
+}
+
+.action-btn:active {
+  transform: translateX(2px);
 }
 
 .logout {
-  background: rgba(127, 29, 29, 0.9);
+  background: rgba(239, 68, 68, 0.25);
+  border-left-color: rgba(239, 68, 68, 0.6);
 }
 
 .logout:hover {
-  background: rgba(185, 28, 28, 1);
+  background: rgba(239, 68, 68, 0.45);
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
 }
 
 /* ===============================

@@ -12,7 +12,7 @@ function initializeApp(configService: ConfigService) {
 }
 
 bootstrapApplication(App, {
-  providers: [
+  providers: [ 
     provideRouter(routes),
     provideHttpClient(
       withInterceptors([authInterceptor])

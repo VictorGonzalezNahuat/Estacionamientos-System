@@ -1,18 +1,18 @@
-import { Component, inject, signal, OnInit, ElementRef, ViewChild, OnDestroy } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { Component, inject, signal, OnInit, ElementRef, ViewChild, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ConfigService } from '../../../services/config.service';
 import { AlertService } from '../../../core/services/alert';
 import { Router } from '@angular/router';
 
-
 @Component({
   selector: 'app-entradas-salidas',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, DatePipe],
+  imports: [ReactiveFormsModule, DatePipe],
   templateUrl: './entradas-salidas.html',
-  styleUrl: './entradas-salidas.css'
+  styleUrl: './entradas-salidas.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EntradasSalidas implements OnInit, OnDestroy{
 

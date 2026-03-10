@@ -1,30 +1,26 @@
-import { Component, inject, signal } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { CommonModule, DatePipe } from '@angular/common';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { ConfigService } from '../../../services/config.service';
 import { AlertService } from '../../../core/services/alert';
+
 @Component({
   selector: 'app-cierre-turno',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, DatePipe],
+  imports: [DatePipe],
   templateUrl: './cierre-turno.html',
   styleUrls: ['./cierre-turno.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CierreTurno {
 
-  private fb = inject(FormBuilder);
   private http = inject(HttpClient);
   private router = inject(Router);
   private configService = inject(ConfigService);
   private alertService = inject(AlertService);
 
   loading = signal(false);
-
-  cierreForm: FormGroup = this.fb.group({
-    password: ['', Validators.required]
-  });
 
   today = new Date();
   turno = signal<any>(null);
@@ -40,14 +36,15 @@ export class CierreTurno {
     this.router.navigate(['/dashboard']);
   }
 
-
-  cerrarTurno() {
-    if (this.cierreForm.invalid) return;
+  async cerrarTurno() {
+    const password = await this.alertService.requestPassword('Confirmar contraseña', 'Por favor ingresa tu contraseña para cerrar el turno');
+    
+    if (!password) return;
 
     this.loading.set(true);
 
     const body = {
-      password: this.cierreForm.value.password
+      password: password
     };
 
     this.http.request(

@@ -49,8 +49,8 @@
           </thead>
 
           <tbody formArrayName="registros">
-            <tr *ngFor="let item of registros.controls; let i = index"
-                [formGroupName]="i">
+            @for (item of registros.controls; track $index; let i = $index) {
+            <tr [formGroupName]="i">
 
               <td>{{ item.get('id')?.value }}</td>
               <td>{{ item.get('placa')?.value }}</td>
@@ -63,6 +63,7 @@
               <td>{{ item.get('importe')?.value | currency }}</td>
 
             </tr>
+            }
           </tbody>
 
         </table>

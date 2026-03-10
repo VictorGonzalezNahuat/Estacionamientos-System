@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { GlobalAlert } from './shared/components/global-alert/global-alert';
 
@@ -7,7 +7,8 @@ import { GlobalAlert } from './shared/components/global-alert/global-alert';
   standalone: true,
   imports: [RouterOutlet, GlobalAlert],
   templateUrl: './app.html',
-  styleUrl: './app.css'
+  styleUrl: './app.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class App {
   protected readonly title = signal('estacionamiento-frontend');

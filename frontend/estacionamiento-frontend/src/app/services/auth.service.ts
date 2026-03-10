@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { ConfigService } from './config.service';
 
@@ -8,15 +8,9 @@ import { ConfigService } from './config.service';
 })
 export class AuthService {
 
-  private apiUrl: string;
-
-  constructor(
-    private http: HttpClient,
-    private router: Router,
-    private configService: ConfigService
-  ) {
-    this.apiUrl = this.configService.apiUrl;
-  }
+  private http = inject(HttpClient);
+  private router = inject(Router);
+  private configService = inject(ConfigService);
 
   login(credentials: { username: string; password: string }) {
     const body = new URLSearchParams();
@@ -24,7 +18,7 @@ export class AuthService {
     body.set('password', credentials.password);
 
     return this.http.post<any>(
-      `${this.apiUrl}/auth/login`,
+      `${this.configService.apiUrl}/auth/login`,
       body.toString(),
       {
         headers: {
@@ -45,5 +39,9 @@ export class AuthService {
 
   isAuthenticated(): boolean {
     return !!localStorage.getItem('token');
+  }
+
+  getCurrentUser() {
+    return this.http.get<any>(`${this.configService.apiUrl}/auth/me`);
   }
 }

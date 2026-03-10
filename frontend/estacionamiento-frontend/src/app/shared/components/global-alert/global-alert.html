@@ -1,59 +1,133 @@
-<div *ngIf="alertService.alertState() as alert" class="custom-alert-overlay">
+@if (alertService.alertState(); as alert) {
+<div class="custom-alert-overlay">
 
   <div class="custom-alert"
        [class.success]="alert.type === 'success'"
        [class.error]="alert.type === 'error'"
-       [class.info]="alert.type === 'info'">
+       [class.info]="alert.type === 'info'"
+       [class.confirm]="alert.type === 'confirm'"
+       [class.session-restart]="alert.type === 'session-restart'"
+       [class.password-input]="alert.type === 'password-input'">
 
-    <!-- ICONO SOLO PARA SUCCESS / ERROR -->
-    <div class="alert-icon" *ngIf="alert.type !== 'info'">
-      {{ alert.type === 'success' ? '✔' : '⚠' }}
+    <!-- ICONO SOLO PARA SUCCESS / ERROR / CONFIRM / SESSION-RESTART -->
+    @if (alert.type !== 'info' && alert.type !== 'password-input') {
+    <div class="alert-icon">
+      {{ alert.type === 'success' ? '✔' : alert.type === 'confirm' ? '❓' : alert.type === 'session-restart' ? '🔄' : '⚠' }}
     </div>
+    }
+
+    <!-- ICONO PARA PASSWORD INPUT -->
+    @if (alert.type === 'password-input') {
+    <div class="alert-icon">
+      🔐
+    </div>
+    }
+
+    <!-- TÍTULO PARA CONFIRM / SESSION-RESTART / PASSWORD-INPUT -->
+    @if ((alert.type === 'confirm' || alert.type === 'session-restart' || alert.type === 'password-input') && alert.title) {
+    <div class="alert-title">
+      {{ alert.title }}
+    </div>
+    }
 
     <!-- MENSAJE SIMPLE -->
-    <div *ngIf="alert.message">
+    @if (alert.message) {
+    <div [class.alert-message]="alert.type === 'confirm' || alert.type === 'session-restart' || alert.type === 'password-input'">
       {{ alert.message }}
     </div>
+    }
 
     <!-- MODO INFO (DETALLADO) -->
-   <div *ngIf="alert.type === 'info'" class="info-container">
+    @if (alert.type === 'info') {
+    <div class="info-container">
+      <h2 class="info-title">
+        {{ alert.title }}
+      </h2>
 
-  <h2 class="info-title">
-    {{ alert.title }}
-  </h2>
+      <div class="info-grid">
+        <div class="info-card card-green">
+          <span class="info-label">Importe</span>
+          <span class="info-value">
+            $ {{ alert.data?.importe }}
+          </span>
+        </div>
 
-  <div class="info-grid">
+        <div class="info-card card-blue">
+          <span class="info-label">Fecha</span>
+          <span class="info-value">
+            {{ alert.data?.fecha_salida }}
+          </span>
+        </div>
 
-    <div class="info-card card-green">
-      <span class="info-label">Importe</span>
-      <span class="info-value">
-        $ {{ alert.data?.importe }}
-      </span>
+        <div class="info-card card-blue">
+          <span class="info-label">Hora</span>
+          <span class="info-value">
+            {{ alert.data?.hora_salida }}
+          </span>
+        </div>
+      </div>
     </div>
+    }
 
-    <div class="info-card card-blue">
-      <span class="info-label">Fecha</span>
-      <span class="info-value">
-        {{ alert.data?.fecha_salida }}
-      </span>
+    <!-- MODO PASSWORD INPUT -->
+    @if (alert.type === 'password-input') {
+    <div class="password-input-container">
+      <input 
+        type="password"
+        class="password-input-field"
+        [(ngModel)]="alert.inputValue"
+        placeholder="Ingresa tu contraseña"
+        (keyup.enter)="alertService.handlePasswordConfirm(true)"
+      />
     </div>
+    }
 
-    <div class="info-card card-blue">
-      <span class="info-label">Hora</span>
-      <span class="info-value">
-        {{ alert.data?.hora_salida }}
-      </span>
+    <!-- BOTONES -->
+    @if (alert.type === 'confirm' || alert.type === 'password-input') {
+    <div class="alert-buttons">
+      @if (alert.type === 'confirm') {
+      <button class="alert-button btn-cancel"
+              (click)="alertService.handleConfirm(false)">
+        Cancelar
+      </button>
+      }
+      @if (alert.type === 'password-input') {
+      <button class="alert-button btn-cancel"
+              (click)="alertService.handlePasswordConfirm(false)">
+        Cancelar
+      </button>
+      }
+      @if (alert.type === 'confirm') {
+      <button class="alert-button btn-confirm"
+              (click)="alertService.handleConfirm(true)">
+        {{ alert.confirmText || 'Aceptar' }}
+      </button>
+      }
+      @if (alert.type === 'password-input') {
+      <button class="alert-button btn-confirm"
+              (click)="alertService.handlePasswordConfirm(true)">
+        {{ alert.confirmText || 'Aceptar' }}
+      </button>
+      }
     </div>
+    }
 
-  </div>
+    <!-- BOTÓN SESSION RESTART -->
+    @if (alert.type === 'session-restart') {
+    <button class="alert-button btn-session-restart" 
+            (click)="alertService.handleSessionRestart()">
+      {{ alert.confirmText || 'Aceptar' }}
+    </button>
+    }
 
-</div>
-
-    <!-- BOTÓN GLOBAL (para TODOS los tipos) -->
+    <!-- BOTÓN GLOBAL (para SUCCESS / ERROR / INFO) -->
+    @if (alert.type !== 'confirm' && alert.type !== 'session-restart' && alert.type !== 'password-input') {
     <button class="alert-button"
             (click)="alertService.close()">
       Aceptar
     </button>
+    }
 
   </div>
 </div>
+}

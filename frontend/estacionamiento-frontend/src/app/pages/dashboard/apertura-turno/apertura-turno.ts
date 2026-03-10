@@ -1,7 +1,6 @@
-import { Component, signal, inject } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { Component, signal, inject, ChangeDetectionStrategy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { DatePipe, CommonModule } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { ConfigService } from '../../../services/config.service';
 import { Router } from '@angular/router';
 import { AlertService } from '../../../core/services/alert';
@@ -9,25 +8,21 @@ import { AlertService } from '../../../core/services/alert';
 @Component({
   selector: 'app-apertura-turno',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, DatePipe],
+  imports: [DatePipe],
   templateUrl: './apertura-turno.html',
   styleUrls: ['./apertura-turno.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AperturaTurno {
   
 
   private http = inject(HttpClient);
-  private fb = inject(FormBuilder);
   private configService = inject(ConfigService);
   private router = inject(Router);
   private alertService = inject(AlertService);
 
   user = signal<any>(null);
   loading = signal(false);
-
-  aperturaForm: FormGroup = this.fb.group({
-    password: ['', Validators.required]
-  });
 
   today = new Date();
   now = new Date();
@@ -54,21 +49,20 @@ export class AperturaTurno {
     });
   }
 
-  abrirTurno() {
-    if (this.aperturaForm.invalid) return;
+  async abrirTurno() {
+    const password = await this.alertService.requestPassword('Confirmar contraseña', 'Por favor ingresa tu contraseña para abrir el turno');
+    
+    if (!password) return;
 
     this.loading.set(true);
-    
 
     this.http.post(
       `${this.configService.apiUrl}/turnos/`,
-      this.aperturaForm.value
+      { password: password }
     ).subscribe({
       next: (res: any) => {
         this.loading.set(false);
         this.alertService.success(`Turno creado correctamente (ID: ${res.id})`);
-
-        this.aperturaForm.reset();
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {

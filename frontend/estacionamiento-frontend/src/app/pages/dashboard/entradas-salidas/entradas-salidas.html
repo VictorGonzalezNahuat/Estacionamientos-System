@@ -3,8 +3,22 @@
   <div class="background-overlay"></div>
 
   <div class="layout">
-    <div class="main-section">
-        <div class="entrada-wrapper">
+    <!-- TOPBAR: ESTADO DEL ESTACIONAMIENTO (ANCHO COMPLETO) -->
+    @if (estado()) {
+    <div class="topbar-estado">
+        <div class="topbar-label">Estado del Estacionamiento:</div>
+        <div class="topbar-content">
+            <span class="topbar-item"><strong>Total:</strong> {{ estado()?.total_espacios }}</span>
+            <span class="topbar-item"><strong>Ocupados:</strong> {{ estado()?.espacios_ocupados }}</span>
+            <span class="topbar-item"><strong>Disponibles:</strong> {{ estado()?.total_espacios - estado()?.espacios_ocupados }}</span>
+        </div>
+    </div>
+    }
+
+    <!-- CONTENEDOR CON DOS COLUMNAS -->
+    <div class="content-row">
+        <div class="main-section">
+            <div class="entrada-wrapper">
 
             <div class="entrada-card">
 
@@ -36,7 +50,8 @@
                 </div>
 
                 <!-- Tarifa -->
-                <div class="tarifa-box" *ngIf="tarifa()">
+                @if (tarifa()) {
+                <div class="tarifa-box">
                 <h3>Tarifa Actual ({{ tarifa()?.tipo_vehiculo }})</h3>
 
                 <div class="tarifa-grid">
@@ -46,6 +61,7 @@
                     <div>$ {{ tarifa()?.diario }} día</div>
                 </div>
                 </div>
+                }
 
                 <!-- Formulario -->
                 <form [formGroup]="form" (ngSubmit)="ingresarVehiculo()">
@@ -67,66 +83,57 @@
             </div>
 
             </div>
-    </div>
-
-    <!-- COLUMNA DERECHA -->
-    <div class="sidebar-section">
-        <button class="btn-back" (click)="goDashboard()">
-        ← Regresar
-        </button>
-
-        <div class="estado-box" *ngIf="estado()">
-
-    <h3>Estado del Estacionamiento</h3>
-
-    <div class="estado-grid">
-        <div>
-            <span>Total</span>
-            <strong>{{ estado()?.total_espacios }}</strong>
-            </div>
-
-            <div>
-            <span>Ocupados</span>
-            <strong>{{ estado()?.espacios_ocupados }}</strong>
-            </div>
-
-            <div>
-            <span>Disponibles</span>
-            <strong>
-                {{
-                estado()?.total_espacios - estado()?.espacios_ocupados
-                }}
-            </strong>
-            </div>
         </div>
 
-        </div>
+        <!-- LISTA DE AUTOS LATERAL -->
+        <div class="cars-sidebar">
+            <button class="btn-back" (click)="goDashboard()">
+            ← Regresar
+            </button>
 
-
-        <h2>Autos Dentro ({{ estacionados().length }})</h2>
-
-        <div class="autos-list">
-
-        <div class="auto-card"
-            *ngFor="let auto of estacionados()">
-
-            <div class="placa">
-            {{ auto.placa }}
+            <div class="cars-header">
+                <h2>Autos Dentro</h2>
+                <span class="cars-count">{{ estacionados().length }}</span>
             </div>
 
-            <div class="detalle">
-            <span>{{ auto.fecha_entrada }}</span>
-            <span>{{ auto.hora_entrada }}</span>
+            <div class="autos-list">
+                @for (auto of estacionados(); track auto.placa) {
+                <div class="auto-card">
+
+                    <div class="plate">
+                        <div class="plate-header">
+                            <div class="state-badge">T</div>
+                            <div class="maya-symbol">❖</div>
+                            <div class="header-text">
+                                <span class="subtitle">Estacionamiento</span>
+                                <div class="title">Yucatán</div>
+                                <span class="gov">Gobierno del Estado · 2024–2030</span>
+                            </div>
+                            <div class="vigencia">
+                                <span>Vigencia</span>
+                                <strong>2025–2028</strong>
+                            </div>
+                        </div>
+
+                        <div class="plate-body">
+                            <div class="plate-number">{{ auto.placa }}</div>
+                        </div>
+
+                        <div class="plate-strip"></div>
+
+                        <div class="plate-footer">
+                            <span>Transporte Privado Automóvil</span>
+                        </div>
+                    </div>
+
+                    <div class="detalle">
+                        <span>{{ auto.fecha_entrada }}</span>
+                        <span>{{ auto.hora_entrada }}</span>
+                    </div>
+                </div>
+                }
             </div>
-
         </div>
-
-        </div>
-
-        
-
-    </div>
-
     </div>
 
 

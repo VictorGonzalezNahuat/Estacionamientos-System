@@ -7,7 +7,7 @@
 
       <!-- CATÁLOGOS -->
       <div class="dropdown"
-           [class.open]="openMenu === 'catalogos'"
+           [class.open]="openMenu() === 'catalogos'"
            (click)="$event.stopPropagation()">
 
         <button class="dropdown-btn"
@@ -16,15 +16,20 @@
         </button>
 
         <div class="dropdown-menu">
-          <button routerLink="usuarios" (click)="navigate()">Usuarios</button>
           <button routerLink="tarifas" (click)="navigate()">Tarifas</button>
-          <button routerLink="vehiculos" (click)="navigate()">Tipos de Vehículo</button>
+          <button routerLink="pensionados" (click)="navigate()">Pensionados</button>
+          <button routerLink="encargados" (click)="navigate()">Encargados / Usuarios</button>
+          <button routerLink="facturacion" (click)="navigate()">Facturación</button>
+          <button routerLink="marca-vehiculos" (click)="navigate()">Marca de vehiculos</button>
+          <button routerLink="empresas" (click)="navigate()">Empresas</button>
+          <button routerLink="clientes" (click)="navigate()">Clientes</button>
+          <button routerLink="vetados" (click)="navigate()">Vetados</button>
         </div>
       </div>
 
       <!-- MOVIMIENTOS -->
       <div class="dropdown"
-           [class.open]="openMenu === 'movimientos'"
+           [class.open]="openMenu() === 'movimientos'"
            (click)="$event.stopPropagation()">
 
         <button class="dropdown-btn"
@@ -33,15 +38,19 @@
         </button>
 
         <div class="dropdown-menu">
-          <button routerLink="apertura" (click)="navigate()">Apertura de Turno</button>
           <button routerLink="entrada-salida" (click)="navigate()">Entrada / Salida</button>
-          <button routerLink="cierre" (click)="navigate()">Cierre de Turno</button>
+          <button routerLink="reporte" (click)="navigate()">Reporte</button>
+          <button routerLink="corte-caja" (click)="navigate()">Corte de Caja</button>
+          <button routerLink="reporte-dia" (click)="navigate()">Reporte Dia</button>
+          <button routerLink="factura-tickets" (click)="navigate()">Facturar Tickets</button>
+          <button routerLink="factura-pensionados" (click)="navigate()">Facturar Pensionados</button>
+          <button routerLink="consulta-recibo" (click)="navigate()">Consultar Recibo</button>
         </div>
       </div>
 
       <!-- REPORTES -->
       <div class="dropdown"
-           [class.open]="openMenu === 'reportes'"
+           [class.open]="openMenu() === 'reportes'"
            (click)="$event.stopPropagation()">
 
         <button class="dropdown-btn"
@@ -57,7 +66,7 @@
 
       <!-- UTILERÍAS -->
       <div class="dropdown"
-           [class.open]="openMenu === 'utilerias'"
+           [class.open]="openMenu() === 'utilerias'"
            (click)="$event.stopPropagation()">
 
         <button class="dropdown-btn"
@@ -73,8 +82,60 @@
 
     </div>
 
+    <!-- INFO CENTER: TARIFA Y USUARIO -->
+    <div class="topbar-info">
+      @if (currentTariff()) {
+      <div class="tariff-badge">
+        <div class="tariff-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="1" x2="12" y2="23"></line>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          </svg>
+        </div>
+        <div class="tariff-content">
+          <span class="tariff-label">Tarifas ({{ currentTariff().tipo_vehiculo }})</span>
+          <span class="tariff-prices">
+            <span class="price-item">H: ${{ currentTariff().hora }}</span>
+            <span class="price-item">1/2 H: ${{ currentTariff().fraccion }}</span>
+            <span class="price-item">1/2 D: ${{ currentTariff().medio_dia }}</span>
+            <span class="price-item">D: ${{ currentTariff().diario }}</span>
+          </span>
+        </div>
+      </div>
+      }
+
+      <div class="separator"></div>
+
+      @if (currentUser()) {
+      <div class="user-badge">
+        <div class="user-avatar">{{ userInitials() }}</div>
+        <div class="user-content">
+          <span class="user-label">Usuario: {{ currentUser().codigo }}</span>
+          <span class="user-name">{{ currentUser().nombre }}</span>
+        </div>
+      </div>
+      }
+    </div>
+
     <div class="menu-right">
-      <button class="logout-btn" (click)="logout()">Cerrar Sesión</button>
+      <button class="icon-btn home-btn" 
+              title="Ir al Dashboard"
+              routerLink="." 
+              (click)="navigate()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+      </button>
+      <button class="icon-btn logout-btn" 
+              title="Cerrar Sesión"
+              (click)="logout()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+      </button>
     </div>
 
   </header>

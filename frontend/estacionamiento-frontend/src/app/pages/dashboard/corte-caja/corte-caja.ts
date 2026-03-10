@@ -1,32 +1,30 @@
-import { Component } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { CommonModule } from '@angular/common';
+import { CurrencyPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { OnInit } from '@angular/core';
 import { ConfigService } from '../../../services/config.service';
 import { AlertService } from '../../../core/services/alert';
-import { ChangeDetectorRef } from '@angular/core';
 
 @Component({
   selector: 'app-corte-caja',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [ReactiveFormsModule, CurrencyPipe],
   templateUrl: './corte-caja.html',
   styleUrl: './corte-caja.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CorteCaja implements OnInit {
 
+  private fb = inject(FormBuilder);
+  private router = inject(Router);
+  private http = inject(HttpClient);
+  private config = inject(ConfigService);
+  private alertService = inject(AlertService);
+
   corteForm: FormGroup;
 
-  constructor(
-    private fb: FormBuilder,
-    private router: Router,
-    private http: HttpClient,
-    private config: ConfigService,
-    private alertService: AlertService,
-    private cdr: ChangeDetectorRef
-  ){
+  constructor() {
 
     this.corteForm = this.fb.group({
       fecha: ['', Validators.required],
@@ -174,9 +172,6 @@ export class CorteCaja implements OnInit {
     });
 
     this.calcularTotales();
-
-    // 👇 ESTA ES LA CLAVE
-    this.cdr.detectChanges();
   }
 
   calcularTiempo(

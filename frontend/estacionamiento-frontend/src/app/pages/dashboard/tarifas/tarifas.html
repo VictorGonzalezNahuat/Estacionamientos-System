@@ -1,0 +1,217 @@
+<div class="tarifas-wrapper">
+  <div class="background-overlay"></div>
+
+  <div class="tarifas-container">
+    <!-- HEADER COMPACTO -->
+    <div class="header">
+      <h1>📋 Gestión de Tarifas</h1>
+    </div>
+
+    <!-- TOPBAR: TARIFA DEFAULT ACTUAL -->
+    @if (tarifaDefault()) {
+    <div class="topbar-default">
+      <div class="topbar-label">⭐ Tarifa Default Actual:</div>
+      <div class="topbar-content">
+        <span class="topbar-item"><strong>Tipo:</strong> {{ tarifaDefault()?.tipo_vehiculo }}</span>
+        <span class="topbar-item"><strong>Hora:</strong> {{ tarifaDefault()?.hora | currency }}</span>
+        <span class="topbar-item"><strong>Diario:</strong> {{ tarifaDefault()?.diario | currency }}</span>
+        <span class="topbar-item"><strong>1/2 Día:</strong> {{ tarifaDefault()?.medio_dia | currency }}</span>
+        <span class="topbar-item"><strong>Fracción:</strong> {{ tarifaDefault()?.fraccion }}min</span>
+      </div>
+    </div>
+    }
+
+    <!-- CONTENEDOR PRINCIPAL: FORMULARIO Y TABLA LADO A LADO -->
+    <div class="main-content-grid">
+      <!-- FORMULARIO DE ENTRADA (IZQUIERDA) -->
+      <div class="form-card">
+      <h2 class="form-title">
+        {{ editandoId() ? '✏️ Editar Tarifa' : '➕ Nueva Tarifa' }}
+      </h2>
+
+      <form [formGroup]="tarifaForm" (ngSubmit)="guardarTarifa()" class="form-grid">
+        <!-- Fila 1: Numero y Tipo Vehiculo -->
+        <div class="form-group">
+          <label>Número</label>
+          <div class="input-with-button">
+            <input
+              type="number"
+              formControlName="numero"
+              placeholder="Ej: 1"
+              min="1"
+            />
+            <button
+              type="button"
+              class="btn-fetch"
+              (click)="obtenerProximoNumero()"
+              title="Obtener siguiente número"
+            >
+              🔍
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Tipo de Vehículo</label>
+          <input
+            type="text"
+            formControlName="tipoVehiculo"
+            placeholder="Ej: Auto, Moto, Bicicleta"
+          />
+        </div>
+
+        <!-- Fila 2: Hora y Fracción -->
+        <div class="form-group">
+          <label>Hora</label>
+          <input
+            type="number"
+            formControlName="hora"
+            placeholder="Ej: 1.50"
+            step="0.01"
+            min="0"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Fracción</label>
+          <input
+            type="number"
+            formControlName="fraccion"
+            placeholder="Ej: 30"
+            min="0"
+          />
+        </div>
+
+        <!-- Fila 3: Diario y 1/2 Día -->
+        <div class="form-group">
+          <label>Diario</label>
+          <input
+            type="number"
+            formControlName="diario"
+            placeholder="Ej: 50.00"
+            step="0.01"
+            min="0"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>1/2 Día</label>
+          <input
+            type="number"
+            formControlName="medioDia"
+            placeholder="Ej: 25.00"
+            step="0.01"
+            min="0"
+          />
+        </div>
+
+        <!-- Observaciones -->
+        <div class="form-group full-width">
+          <label>Observaciones</label>
+          <textarea
+            formControlName="observaciones"
+            placeholder="Notas adicionales sobre esta tarifa"
+            rows="2"
+          ></textarea>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="button-group">
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="tarifaForm.invalid"
+          >
+            {{ editandoId() ? '💾 Actualizar' : '💾 Guardar' }}
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="limpiarFormulario()"
+          >
+            🗑️ Limpiar
+          </button>
+
+          @if (editandoId()) {
+          <button
+            type="button"
+            class="btn btn-danger"
+            (click)="cancelarEdicion()"
+          >
+            ❌ Cancelar
+          </button>
+          }
+        </div>
+      </form>
+    </div>
+
+    <!-- TABLA DE TARIFAS (DERECHA) -->
+    <div class="table-card">
+      <h2 class="table-title">📊 Tarifas Registradas</h2>
+
+      @if (tarifas().length === 0) {
+      <div class="empty-state">
+        <p>No hay tarifas registradas. ¡Crea una nueva!</p>
+      </div>
+      }
+
+      @if (tarifas().length > 0) {
+      <div class="table-wrapper">
+        <table class="tarifas-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Tipo Vehículo</th>
+              <th>Hora</th>
+              <th>Fracción</th>
+              <th>Diario</th>
+              <th>1/2 Día</th>
+              <th>Observaciones</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (tarifa of tarifas(); track tarifa.id) {
+            <tr [class.highlight]="editandoId() === tarifa.id">
+              <td class="numero">{{ tarifa.numero }}</td>
+              <td>{{ tarifa.tipo_vehiculo }}</td>
+              <td>{{ tarifa.hora | currency }}</td>
+              <td>{{ tarifa.fraccion | currency}}</td>
+              <td>{{ tarifa.diario | currency }}</td>
+              <td>{{ tarifa.medio_dia | currency }}</td>
+              <td class="observaciones">{{ tarifa.observaciones || '—' }}</td>
+              <td class="actions">
+                <button
+                  class="btn-action btn-edit"
+                  (click)="editarTarifa(tarifa)"
+                  title="Editar"
+                >
+                  ✏️
+                </button>
+                <button
+                  class="btn-action btn-default"
+                  (click)="establecerDefaultTarifa(tarifa.numero)"
+                  [disabled]="cargandoDefault() === tarifa.numero"
+                  title="Establecer como tarifa default"
+                >
+                  {{ cargandoDefault() === tarifa.numero ? '⏳' : '⭐' }}
+                </button>
+                <button
+                  class="btn-action btn-delete"
+                  (click)="eliminarTarifa(tarifa.id)"
+                  title="Eliminar"
+                >
+                  🗑️
+                </button>
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      }
+    </div>
+    </div>
+  </div>
+</div>
