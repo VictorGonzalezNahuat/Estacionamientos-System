@@ -132,8 +132,8 @@
   color: #fca5a5;
   font-size: 14px;
   padding: 12px 16px;
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: #7f1d1d;
+  border: 1px solid #ef4444;
   border-left: 4px solid #ef4444;
   border-radius: 10px;
   letter-spacing: 0.3px;
@@ -145,9 +145,9 @@
   align-items: flex-start;
   gap: 12px;
   padding: 14px 16px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-left: 4px solid rgba(251, 191, 36, 0.7);
+  background: #1e293b;
+  border: 1px solid #475569;
+  border-left: 4px solid #fbbf24;
   border-radius: 10px;
 }
 
@@ -160,13 +160,13 @@
 .forgot-password-info p {
   margin: 0;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.75);
+  color: #cbd5e1;
   line-height: 1.6;
   letter-spacing: 0.2px;
 }
 
 .forgot-password-info p strong {
-  color: rgba(251, 191, 36, 0.9);
+  color: #fbbf24;
   font-weight: 600;
 }
 

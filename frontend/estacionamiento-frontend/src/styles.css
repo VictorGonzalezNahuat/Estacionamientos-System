@@ -10,3 +10,38 @@ html, body {
   padding: 0;
   scrollbar-gutter: stable;
 }
+
+/* Global low-power mode for integrated graphics and older CPUs */
+*, *::before, *::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Freeze decorative motion and compositing-heavy transitions */
+*, *::before, *::after {
+  animation: none !important;
+  transition-property: none !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+}
+
+/* Keep visual hierarchy with lighter shadows */
+.login-card,
+[class*="card"],
+[class*="panel"],
+[class*="modal"],
+[class*="alert"] {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18) !important;
+}
+
+button,
+[class*="btn"] {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18) !important;
+}
+
+button:hover,
+[class*="btn"]:hover,
+[class*="card"]:hover,
+[class*="panel"]:hover {
+  transform: none !important;
+}
