@@ -62,3 +62,42 @@ def get_current_user(
         raise credentials_exception
 
     return usuario
+
+# Función para obtener usuario actual solo si tiene rol admin
+def get_current_admin(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+):
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail="No se pudo validar credenciales",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    usuario = db.query(Usuario).filter(Usuario.id == int(user_id)).first()
+    if usuario is None:
+        raise credentials_exception
+
+    # Verificar rol admin
+    import json
+    rol = usuario.rol
+    if isinstance(rol, str):
+        try:
+            rol = json.loads(rol)
+        except (ValueError, TypeError):
+            rol = {}
+    if not isinstance(rol, dict) or not rol.get("admin", False):
+        raise HTTPException(
+            status_code=403,
+            detail="Acceso denegado: se requiere rol de administrador",
+        )
+
+    return usuario

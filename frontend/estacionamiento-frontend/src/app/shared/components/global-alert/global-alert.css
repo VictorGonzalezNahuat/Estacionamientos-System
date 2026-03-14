@@ -301,3 +301,129 @@
   background: rgba(59, 130, 246, 0.35) !important;
   border-color: rgba(59, 130, 246, 0.7) !important;
 }
+
+/* =========================
+   RESET PASSWORD STEPS
+========================= */
+
+.custom-alert.reset-password-step1,
+.custom-alert.reset-password-step2 {
+  border-left: 6px solid #f59e0b;
+  min-width: 380px;
+  max-width: 460px;
+}
+
+.reset-fields-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 4px 0;
+  text-align: left;
+}
+
+.reset-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.reset-field-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.3px;
+}
+
+.reset-field-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.reset-field-wrap .password-input-field {
+  flex: 1;
+}
+
+.btn-toggle-reset {
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: rgba(30, 41, 59, 0.75);
+  color: #e2e8f0;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  min-width: 58px;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.btn-toggle-reset:hover {
+  background: rgba(51, 65, 85, 0.9);
+}
+
+.reset-match-status {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 10px;
+  border-radius: 8px;
+  text-align: center;
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: rgba(226, 232, 240, 0.8);
+}
+
+.reset-match-status.match-ok {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(74, 222, 128, 0.4);
+  color: #bbf7d0;
+}
+
+.reset-match-status.match-err {
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(252, 165, 165, 0.35);
+  color: #fecaca;
+}
+
+.btn-reset-next {
+  flex: 1;
+  background: rgba(245, 158, 11, 0.25) !important;
+  border: 1px solid rgba(245, 158, 11, 0.5) !important;
+  color: #fde68a !important;
+}
+
+.btn-reset-next:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.35) !important;
+}
+
+.btn-reset-next:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-reset-back {
+  flex: 1;
+  background: rgba(100, 116, 139, 0.2) !important;
+  border: 1px solid rgba(100, 116, 139, 0.4) !important;
+  color: #cbd5e1 !important;
+}
+
+.btn-reset-back:hover {
+  background: rgba(100, 116, 139, 0.3) !important;
+}
+
+.btn-reset-confirm {
+  flex: 1;
+  background: rgba(245, 158, 11, 0.25) !important;
+  border: 1px solid rgba(245, 158, 11, 0.5) !important;
+  color: #fde68a !important;
+}
+
+.btn-reset-confirm:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.35) !important;
+}
+
+.btn-reset-confirm:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

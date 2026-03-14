@@ -2,15 +2,18 @@
 
   <div class="background-overlay"></div>
 
-  <div class="login-card">
+  <form class="login-card" (ngSubmit)="onLogin()">
     <h1 class="brand-title">Estacionamiento</h1>
     <p class="subtitle">Sistema de Gestión de Estacionamiento</p>
 
     <div class="form-group">
       <input
+        #usernameInput
         type="text"
-        placeholder="Usuario"
+        placeholder="Código de usuario"
         [(ngModel)]="username"
+        name="username"
+        autofocus
       />
     </div>
 
@@ -19,16 +22,26 @@
         type="password"
         placeholder="Contraseña"
         [(ngModel)]="password"
+        name="password"
       />
     </div>
 
-    <button class="login-btn" (click)="onLogin()">
+    <button type="submit" class="login-btn">
       Ingresar
     </button>
 
     @if (errorMessage) {
       <p class="error">{{ errorMessage }}</p>
     }
-  </div>
+
+    <div class="forgot-password-info">
+      <span class="forgot-icon">🔒</span>
+      <p>
+        <strong>¿Olvidaste tu contraseña?</strong><br>
+        Contacta con un administrador para establecer una nueva.
+        Por razones de seguridad, las contraseñas olvidadas no pueden ser recuperadas.
+      </p>
+    </div>
+  </form>
 
 </div>

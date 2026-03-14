@@ -137,12 +137,16 @@ def sacar_auto(
                 importe += tarifa.fraccion
             else:
                 importe += tarifa.hora
+    
+    #Como es salida se guarda el turno actual del usuario actual
+    turno_usuario = db.query(Turno).filter(Turno.encargado_id == current_user.id, Turno.estado == "activo").first()
+
 
     # 🔹 Crear registro en historial
     historial = HistoryEstacionamiento(
         tarifa_id=vehiculo.tarifa_id,
         encargado_id=vehiculo.encargado_id,
-        turno_id=vehiculo.turno_id,
+        turno_id=turno_usuario.id,
         fecha_entrada=vehiculo.fecha_entrada,
         hora_entrada=vehiculo.hora_entrada,
         fecha_salida=fecha_salida,

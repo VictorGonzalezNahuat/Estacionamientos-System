@@ -15,6 +15,19 @@
     </div>
     }
 
+    @if (tarifa()) {
+    <div class="topbar-tarifa">
+        <div class="topbar-label topbar-label--warning">Tarifa Actual:</div>
+        <div class="topbar-content">
+            <span class="topbar-item"><strong>Tipo:</strong> {{ tarifa()?.tipo_vehiculo }}</span>
+            <span class="topbar-item"><strong>Hora:</strong> {{ tarifa()?.hora | currency }}</span>
+            <span class="topbar-item"><strong>Diario:</strong> {{ tarifa()?.diario | currency }}</span>
+            <span class="topbar-item"><strong>1/2 Día:</strong> {{ tarifa()?.medio_dia | currency }}</span>
+            <span class="topbar-item"><strong>Fracción:</strong> {{ tarifa()?.fraccion | currency }}</span>
+        </div>
+    </div>
+    }
+
     <!-- CONTENEDOR CON DOS COLUMNAS -->
     <div class="content-row">
         <div class="main-section">
@@ -49,20 +62,6 @@
 
                 </div>
 
-                <!-- Tarifa -->
-                @if (tarifa()) {
-                <div class="tarifa-box">
-                <h3>Tarifa Actual ({{ tarifa()?.tipo_vehiculo }})</h3>
-
-                <div class="tarifa-grid">
-                    <div>$ {{ tarifa()?.hora }} / hora</div>
-                    <div>$ {{ tarifa()?.fraccion }} fracción</div>
-                    <div>$ {{ tarifa()?.medio_dia }} medio día</div>
-                    <div>$ {{ tarifa()?.diario }} día</div>
-                </div>
-                </div>
-                }
-
                 <!-- Formulario -->
                 <form [formGroup]="form" (ngSubmit)="ingresarVehiculo()">
 
@@ -74,7 +73,7 @@
                     class="placa-input"
                 />
 
-                <button type="submit" [disabled]="form.invalid || loading()">
+                <button type="submit" class="submit-btn" [disabled]="form.invalid || loading()">
                     {{ loading() ? 'Ingresando...' : 'Ingresar Vehículo' }}
                 </button>
 
@@ -82,6 +81,26 @@
 
             </div>
 
+            </div>
+
+            <div class="acciones-wrapper">
+                <div class="acciones-card">
+
+                    <div class="acciones-grid">
+                        <button type="button" class="shortcut-btn shortcut-btn--blue" (click)="goEstacionados()">
+                            Estacionados
+                        </button>
+                        <button type="button" class="shortcut-btn shortcut-btn--amber">
+                            Entrada Baños
+                        </button>
+                        <button type="button" class="shortcut-btn shortcut-btn--blue">
+                            Pensionados
+                        </button>
+                        <button type="button" class="shortcut-btn shortcut-btn--blue">
+                            Empresas
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 

@@ -3,6 +3,9 @@ import { authGuard } from './guards/auth-guard';
 import { turnoGuard } from './guards/turno-guard';
 import { cierreTurnoGuard } from './guards/cierre-turno-guard';
 import { entradasSalidasGuard } from './guards/entradas-salidas-guard';
+import { tarifasGuard } from './guards/tarifas-guard';
+import { encargadosGuard } from './guards/encargados-guard';
+import { corteCajaGuard } from './guards/corte-caja-guard';
 
 export const routes: Routes = [
   {
@@ -35,12 +38,24 @@ export const routes: Routes = [
       },
       {
         path: 'corte_caja',
-        loadComponent: () => import('./pages/dashboard/corte-caja/corte-caja').then(m => m.CorteCaja)
+        loadComponent: () => import('./pages/dashboard/corte-caja/corte-caja').then(m => m.CorteCaja),
+        canActivate: [corteCajaGuard]
       },
       {
         path: 'tarifas',
-        loadComponent: () => import('./pages/dashboard/tarifas/tarifas').then(m => m.Tarifas)
+        loadComponent: () => import('./pages/dashboard/tarifas/tarifas').then(m => m.Tarifas),
+        canActivate: [tarifasGuard]
+      },
+      {
+        path: 'encargados',
+        loadComponent: () => import('./pages/dashboard/encargados/encargados').then(m => m.Encargados),
+        canActivate: [encargadosGuard]
+      },
+      {
+        path: 'estacionados',
+        loadComponent: () => import('./pages/dashboard/estacionados/estacionados').then(m => m.Estacionados)
       }
+
     ]
   },
   { path: '', redirectTo: 'login', pathMatch: 'full' }

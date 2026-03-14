@@ -1,13 +1,12 @@
+import { HttpClient } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
-import { map, catchError, of, switchMap } from 'rxjs';
 import { ConfigService } from '../services/config.service';
 import { AlertService } from '../core/services/alert';
 import { AuthService } from '../services/auth.service';
+import { catchError, map, of, switchMap } from 'rxjs';
 
-export const cierreTurnoGuard: CanActivateFn = () => {
-
+export const corteCajaGuard: CanActivateFn = () => {
   const http = inject(HttpClient);
   const router = inject(Router);
   const configService = inject(ConfigService);
@@ -31,7 +30,7 @@ export const cierreTurnoGuard: CanActivateFn = () => {
             return true;
           }
 
-          alertService.error('No tienes un turno abierto para cerrar.');
+          alertService.error('No hay turno abierto');
           return router.createUrlTree(['/dashboard']);
         })
       );

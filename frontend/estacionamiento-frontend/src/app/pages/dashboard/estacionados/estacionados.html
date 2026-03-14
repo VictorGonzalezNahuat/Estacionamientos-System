@@ -1,0 +1,75 @@
+<section class="estacionados-page">
+	<div class="background-overlay"></div>
+	<div class="estacionados-shell">
+		<header class="page-header">
+			<div>
+				<p class="eyebrow">Dashboard / Estacionados</p>
+				<h1>Vehiculos actualmente estacionados</h1>
+				<p class="page-copy">Detalle en tiempo real de los vehiculos que siguen dentro del estacionamiento.</p>
+			</div>
+
+			<div class="header-actions">
+				<button type="button" class="secondary-btn" (click)="goBack()">Regresar</button>
+				<button type="button" class="primary-btn" (click)="refrescar()" [disabled]="loading()">{{ loading() ? 'Actualizando...' : 'Actualizar' }}</button>
+			</div>
+		</header>
+
+		<section class="topbar-estado">
+			<div class="topbar-label">Estado actual:</div>
+			<div class="topbar-content">
+				<span class="topbar-item"><strong>Autos dentro:</strong> {{ estacionados().length }}</span>
+				<span class="topbar-item"><strong>Ultima actualizacion:</strong> {{ ultimaActualizacion() }}</span>
+			</div>
+		</section>
+
+		<section class="table-card">
+			@if (loading()) {
+				<div class="empty-state">
+					<h2>Cargando estacionados...</h2>
+					<p>Estamos actualizando la informacion en tiempo real.</p>
+				</div>
+			} @else if (estacionados().length > 0) {
+				<div class="table-wrapper">
+					<table>
+						<thead>
+							<tr>
+								<th>Folio</th>
+								<th>Placa</th>
+								<th>Turno</th>
+								<th>Fecha entrada</th>
+								<th>Hora entrada</th>
+								<th>Ingreso completo</th>
+								<th>Tiempo transcurrido</th>
+								<th>Acciones</th>
+							</tr>
+						</thead>
+						<tbody>
+							@for (auto of estacionados(); track auto.id + '-' + auto.placa) {
+								<tr>
+									<td>{{ auto.id }}</td>
+									<td class="cell-plate">{{ auto.placa }}</td>
+									<td>{{ auto.turnoId }}</td>
+									<td>{{ auto.fechaEntrada }}</td>
+									<td>{{ auto.horaEntrada }}</td>
+									<td>{{ auto.ingresoCompleto }}</td>
+									<td>{{ auto.tiempoTranscurrido }}</td>
+									<td class="cell-actions">
+										<div class="row-actions">
+											<button type="button" class="action-btn action-btn--print">Imprimir</button>
+											<button type="button" class="action-btn action-btn--exit">Salida</button>
+										</div>
+									</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			} @else {
+				<div class="empty-state">
+					<h2>No hay autos estacionados</h2>
+					<p>Cuando entren vehiculos al estacionamiento apareceran aqui.</p>
+				</div>
+			}
+		</section>
+	</div>
+</section>

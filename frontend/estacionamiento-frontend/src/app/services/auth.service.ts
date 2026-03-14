@@ -44,4 +44,12 @@ export class AuthService {
   getCurrentUser() {
     return this.http.get<any>(`${this.configService.apiUrl}/auth/me`);
   }
+
+  verifyAdmin() {
+    return this.http.get<{ admin: boolean }>(`${this.configService.apiUrl}/auth/verify-admin`);
+  }
+
+  verifyEncargado() {
+    return this.http.get<{ encargado: boolean }>(`${this.configService.apiUrl}/auth/verify-encargado`);
+  }
 }

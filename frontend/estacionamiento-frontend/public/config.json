@@ -1,3 +1,10 @@
 {
-  "apiUrl": "http://127.0.0.1:8000"
+  "apiUrl": "http://127.0.0.1:8000",
+  "speech": {
+    "voiceName": "Eddy",
+    "lang": "es-MX",
+    "rate": 1,
+    "pitch": 1.2,
+    "volume": 1
+  }
 }

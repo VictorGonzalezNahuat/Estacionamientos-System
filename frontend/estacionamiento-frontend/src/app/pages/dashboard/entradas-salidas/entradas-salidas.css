@@ -102,59 +102,6 @@
 }
 
 
-.tarifa-box {
-  background: rgba(34, 197, 94, 0.08);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  padding: 28px;
-  border-radius: 18px;
-  border: 1.5px solid rgba(34, 197, 94, 0.4);
-  border-left: 4px solid rgba(34, 197, 94, 0.7);
-  box-shadow: 
-    0 8px 25px rgba(0, 0, 0, 0.25),
-    inset 0 1px 1px rgba(255, 255, 255, 0.15);
-}
-
-.tarifa-box h3 {
-  font-size: 14px;
-  font-weight: 700;
-  margin: 0 0 18px 0;
-  letter-spacing: 0.8px;
-  color: rgba(255, 255, 255, 0.9);
-  text-transform: uppercase;
-}
-
-
-.tarifa-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-top: 0;
-}
-
-.tarifa-grid > div {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  padding: 16px 14px;
-  border-radius: 12px;
-  text-align: center;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  border: 1px solid rgba(34, 197, 94, 0.3);
-  border-left: 2px solid rgba(34, 197, 94, 0.5);
-  color: rgba(255, 255, 255, 0.95);
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-}
-
-.tarifa-grid > div:hover {
-  background: rgba(34, 197, 94, 0.18);
-  border-color: rgba(34, 197, 94, 0.5);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 18px rgba(34, 197, 94, 0.2);
-}
-
 .placa-input {
   width: 100%;
   padding: 26px 24px;
@@ -231,6 +178,10 @@ button:disabled {
   cursor: not-allowed;
 }
 
+.submit-btn {
+  width: 100%;
+}
+
 
 .layout {
   position: relative;
@@ -257,14 +208,103 @@ button:disabled {
 .main-section {
   flex: 1.2;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 20px;
+  align-items: center;
+}
+
+.entrada-wrapper,
+.acciones-wrapper {
+  width: 100%;
+  max-width: 900px;
+}
+
+.acciones-card {
+  width: 100%;
+  padding: 28px 32px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-top: 2px solid rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 30px 70px rgba(0, 0, 0, 0.32),
+    inset 0 1px 2px rgba(255, 255, 255, 0.2);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  animation: floatIn 0.7s ease-out;
+}
+
+.acciones-header {
+  display: flex;
+  justify-content: space-between;
   align-items: flex-start;
+}
+
+.acciones-header h2 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.acciones-header p {
+  margin: 4px 0 0;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 14px;
+  letter-spacing: 0.3px;
+}
+
+.acciones-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.shortcut-btn {
+  margin-top: 0;
+  min-height: 58px;
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  text-transform: none;
+  white-space: nowrap;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.25);
+}
+
+.shortcut-btn--blue {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.95), rgba(29, 78, 216, 0.9));
+}
+
+.shortcut-btn--blue:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(29, 78, 216, 1), rgba(30, 64, 175, 0.95));
+}
+
+.shortcut-btn--amber {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.95), rgba(245, 158, 11, 0.92));
+  color: #1f2937;
+  box-shadow: 0 14px 30px rgba(245, 158, 11, 0.24);
+}
+
+.shortcut-btn--amber:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 1), rgba(217, 119, 6, 0.95));
+  color: #111827;
+  box-shadow: 0 18px 34px rgba(245, 158, 11, 0.3);
 }
 
 .cars-sidebar {
   flex: 0.9;
   max-width: 420px;
-  height: 80vh;
+  height: min(72vh, calc(100vh - 230px));
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -406,6 +446,22 @@ button:disabled {
   width: 100%;
 }
 
+.topbar-tarifa {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.25), rgba(251, 191, 36, 0.15));
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  border-radius: 12px;
+  padding: 12px 20px;
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+  animation: slideInUp 0.5s ease-out;
+  width: 100%;
+}
+
 .topbar-label {
   font-size: 14px;
   font-weight: 700;
@@ -413,6 +469,10 @@ button:disabled {
   white-space: nowrap;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.topbar-label--warning {
+  color: rgba(251, 191, 36, 1);
 }
 
 .topbar-content {
@@ -432,6 +492,10 @@ button:disabled {
   color: rgba(34, 197, 94, 1);
   font-weight: 700;
   margin-right: 6px;
+}
+
+.topbar-tarifa .topbar-item strong {
+  color: rgba(251, 191, 36, 1);
 }
 
 .btn-back {

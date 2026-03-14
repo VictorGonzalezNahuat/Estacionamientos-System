@@ -1,5 +1,5 @@
-import { Component, inject, signal, OnInit, ElementRef, ViewChild, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { Component, inject, signal, OnInit, ElementRef, ViewChild, OnDestroy, ChangeDetectionStrategy, AfterViewInit } from '@angular/core';
+import { CurrencyPipe, DatePipe } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ConfigService } from '../../../services/config.service';
@@ -9,12 +9,12 @@ import { Router } from '@angular/router';
 @Component({
   selector: 'app-entradas-salidas',
   standalone: true,
-  imports: [ReactiveFormsModule, DatePipe],
+  imports: [ReactiveFormsModule, DatePipe, CurrencyPipe],
   templateUrl: './entradas-salidas.html',
   styleUrl: './entradas-salidas.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class EntradasSalidas implements OnInit, OnDestroy{
+export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
 
   private http = inject(HttpClient);
   private fb = inject(FormBuilder);
@@ -45,12 +45,20 @@ export class EntradasSalidas implements OnInit, OnDestroy{
     this.router.navigate(['/dashboard']);
   }
 
+  goEstacionados() {
+    this.router.navigate(['/dashboard/estacionados']);
+  }
+
   ngOnInit() {
     this.cargarDatos();
     this.cargarEstacionados();
     this.cargarEstado();
     this.iniciarReloj();
     this.iniciarAutoRefresh();
+  }
+
+  ngAfterViewInit() {
+    this.focusAndSelectPlaca();
   }
 
   cargarEstado() {
@@ -93,7 +101,8 @@ export class EntradasSalidas implements OnInit, OnDestroy{
       { placa }
     ).subscribe({
       next: () => {
-        this.alert.success('Vehículo ingresado correctamente');
+        this.alert.success('Vehículo ingresado correctamente', () => this.focusAndSelectPlaca());
+        this.speak('Ha ingresado un nuevo vehiculo');
         this.postOperacionExitosa();
       },
       error: () => {
@@ -109,11 +118,13 @@ export class EntradasSalidas implements OnInit, OnDestroy{
     ).subscribe({
       next: (res: any) => {
         this.alert.info('Vehículo retirado correctamente', res);
+        const importe = res?.importe != null ? `El importe a cobrar es ${res.importe} pesos` : '';
+        this.speak(`Vehículo retirado. ${importe}`);
         this.postOperacionExitosa();
       },
 
       error: () => {
-        this.alert.error('La placa no pudo ingresar ni salir');
+        this.alert.error('La placa no pudo ingresar ni salir', () => this.focusAndSelectPlaca());
         this.loading.set(false);
       }
     });
@@ -125,9 +136,7 @@ export class EntradasSalidas implements OnInit, OnDestroy{
     this.cargarEstacionados();
     this.cargarEstado();
 
-    setTimeout(() => {
-      this.placaInput?.nativeElement.focus();
-    }, 100);
+    setTimeout(() => this.focusAndSelectPlaca(), 100);
   }
 
 
@@ -150,6 +159,41 @@ export class EntradasSalidas implements OnInit, OnDestroy{
   ngOnDestroy() {
     clearInterval(this.relojInterval);
     clearInterval(this.refreshInterval);
+  }
+
+  private focusAndSelectPlaca() {
+    const input = this.placaInput?.nativeElement;
+    if (!input) return;
+    input.focus();
+    input.select();
+  }
+
+  private speak(text: string) {
+    if (!('speechSynthesis' in window)) return;
+
+    const synth = window.speechSynthesis;
+    const utterance = new SpeechSynthesisUtterance(text);
+    const preferredName = this.config.speechVoiceName;
+    const preferredLang = this.config.speechLang;
+
+    utterance.lang = preferredLang;
+    utterance.rate = this.config.speechRate;
+    utterance.pitch = this.config.speechPitch;
+    utterance.volume = this.config.speechVolume;
+
+    const voices = synth.getVoices();
+    const selectedVoice =
+      (preferredName ? voices.find(v => v.name === preferredName) : undefined) ??
+      voices.find(v => v.lang === preferredLang) ??
+      voices.find(v => v.lang.startsWith('es'));
+
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+      utterance.lang = selectedVoice.lang;
+    }
+
+    synth.cancel();
+    synth.speak(utterance);
   }
 
 }

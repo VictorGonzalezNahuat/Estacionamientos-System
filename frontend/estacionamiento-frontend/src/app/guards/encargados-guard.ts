@@ -4,7 +4,7 @@ import { catchError, map, of } from 'rxjs';
 import { AlertService } from '../core/services/alert';
 import { AuthService } from '../services/auth.service';
 
-export const tarifasGuard: CanActivateFn = () => {
+export const encargadosGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
   const alertService = inject(AlertService);
@@ -15,11 +15,11 @@ export const tarifasGuard: CanActivateFn = () => {
         return true;
       }
 
-      alertService.error('Debes ser administrador para acceder a las tarifas');
+      alertService.error('Debes ser administrador para acceder a los encargados');
       return router.createUrlTree(['/dashboard']);
     }),
     catchError(error => {
-      console.error('ERROR DEL GUARD DE TARIFAS:', error);
+      console.error('ERROR DEL GUARD DE ENCARGADOS:', error);
       alertService.error('No fue posible validar permisos de administrador.');
       return of(router.createUrlTree(['/login']));
     })

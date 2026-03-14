@@ -7,24 +7,19 @@
        [class.info]="alert.type === 'info'"
        [class.confirm]="alert.type === 'confirm'"
        [class.session-restart]="alert.type === 'session-restart'"
-       [class.password-input]="alert.type === 'password-input'">
+       [class.password-input]="alert.type === 'password-input'"
+       [class.reset-password-step1]="alert.type === 'reset-password-step1'"
+       [class.reset-password-step2]="alert.type === 'reset-password-step2'">
 
-    <!-- ICONO SOLO PARA SUCCESS / ERROR / CONFIRM / SESSION-RESTART -->
-    @if (alert.type !== 'info' && alert.type !== 'password-input') {
+    <!-- ICONO -->
+    @if (alert.type !== 'info') {
     <div class="alert-icon">
-      {{ alert.type === 'success' ? '✔' : alert.type === 'confirm' ? '❓' : alert.type === 'session-restart' ? '🔄' : '⚠' }}
-    </div>
-    }
-
-    <!-- ICONO PARA PASSWORD INPUT -->
-    @if (alert.type === 'password-input') {
-    <div class="alert-icon">
-      🔐
+      {{ alert.type === 'success' ? '✔' : alert.type === 'confirm' ? '❓' : alert.type === 'session-restart' ? '🔄' : alert.type === 'password-input' ? '🔐' : alert.type === 'reset-password-step1' || alert.type === 'reset-password-step2' ? '🔑' : '⚠' }}
     </div>
     }
 
     <!-- TÍTULO PARA CONFIRM / SESSION-RESTART / PASSWORD-INPUT -->
-    @if ((alert.type === 'confirm' || alert.type === 'session-restart' || alert.type === 'password-input') && alert.title) {
+    @if ((alert.type === 'confirm' || alert.type === 'session-restart' || alert.type === 'password-input' || alert.type === 'reset-password-step1' || alert.type === 'reset-password-step2') && alert.title) {
     <div class="alert-title">
       {{ alert.title }}
     </div>
@@ -32,7 +27,7 @@
 
     <!-- MENSAJE SIMPLE -->
     @if (alert.message) {
-    <div [class.alert-message]="alert.type === 'confirm' || alert.type === 'session-restart' || alert.type === 'password-input'">
+    <div [class.alert-message]="alert.type === 'confirm' || alert.type === 'session-restart' || alert.type === 'password-input' || alert.type === 'reset-password-step1' || alert.type === 'reset-password-step2'">
       {{ alert.message }}
     </div>
     }
@@ -82,6 +77,68 @@
     </div>
     }
 
+    <!-- MODO RESET-PASSWORD STEP 1 -->
+    @if (alert.type === 'reset-password-step1') {
+    <div class="reset-fields-grid">
+      <div class="reset-field-group">
+        <label class="reset-field-label">Nueva contraseña</label>
+        <div class="reset-field-wrap">
+          <input
+            [type]="mostrarNuevaPass() ? 'text' : 'password'"
+            class="password-input-field"
+            [(ngModel)]="alert.inputValue"
+            placeholder="Nueva contraseña"
+            autocomplete="new-password"
+          />
+          <button type="button" class="btn-toggle-reset" (click)="toggleNuevaPass()">
+            {{ mostrarNuevaPass() ? 'Ocultar' : 'Ver' }}
+          </button>
+        </div>
+      </div>
+      <div class="reset-field-group">
+        <label class="reset-field-label">Confirmar contraseña</label>
+        <div class="reset-field-wrap">
+          <input
+            [type]="mostrarConfirmarNuevaPass() ? 'text' : 'password'"
+            class="password-input-field"
+            [(ngModel)]="alert.inputValue2"
+            placeholder="Repite la nueva contraseña"
+            autocomplete="new-password"
+          />
+          <button type="button" class="btn-toggle-reset" (click)="toggleConfirmarNuevaPass()">
+            {{ mostrarConfirmarNuevaPass() ? 'Ocultar' : 'Ver' }}
+          </button>
+        </div>
+      </div>
+      <div class="reset-match-status"
+           [class.match-ok]="resetStep1Valid"
+           [class.match-err]="!!(alert.inputValue2 && alert.inputValue !== alert.inputValue2)">
+        @if (resetStep1Valid) { ✓ Las contraseñas coinciden }
+        @else if (alert.inputValue2 && alert.inputValue !== alert.inputValue2) { ✗ Las contraseñas no coinciden }
+        @else { Escribe la misma contraseña para confirmar }
+      </div>
+    </div>
+    }
+
+    <!-- MODO RESET-PASSWORD STEP 2 -->
+    @if (alert.type === 'reset-password-step2') {
+    <div class="password-input-container">
+      <div class="reset-field-wrap">
+        <input
+          [type]="mostrarAdminPass() ? 'text' : 'password'"
+          class="password-input-field"
+          [(ngModel)]="alert.inputValue"
+          placeholder="Tu contraseña de administrador"
+          autocomplete="current-password"
+          (keyup.enter)="alert.inputValue && alertService.handleResetSubmit()"
+        />
+        <button type="button" class="btn-toggle-reset" (click)="toggleAdminPass()">
+          {{ mostrarAdminPass() ? 'Ocultar' : 'Ver' }}
+        </button>
+      </div>
+    </div>
+    }
+
     <!-- BOTONES -->
     @if (alert.type === 'confirm' || alert.type === 'password-input') {
     <div class="alert-buttons">
@@ -112,6 +169,34 @@
     </div>
     }
 
+    <!-- BOTONES RESET STEP 1 -->
+    @if (alert.type === 'reset-password-step1') {
+    <div class="alert-buttons">
+      <button class="alert-button btn-cancel" (click)="alertService.handleResetCancel()">
+        Cancelar
+      </button>
+      <button class="alert-button btn-reset-next"
+              [disabled]="!resetStep1Valid"
+              (click)="alertService.handleResetGoStep2()">
+        Siguiente →
+      </button>
+    </div>
+    }
+
+    <!-- BOTONES RESET STEP 2 -->
+    @if (alert.type === 'reset-password-step2') {
+    <div class="alert-buttons">
+      <button class="alert-button btn-reset-back" (click)="alertService.handleResetGoBack()">
+        ← Atrás
+      </button>
+      <button class="alert-button btn-reset-confirm"
+              [disabled]="!alert.inputValue"
+              (click)="alertService.handleResetSubmit()">
+        🔑 Restablecer
+      </button>
+    </div>
+    }
+
     <!-- BOTÓN SESSION RESTART -->
     @if (alert.type === 'session-restart') {
     <button class="alert-button btn-session-restart" 
@@ -121,7 +206,7 @@
     }
 
     <!-- BOTÓN GLOBAL (para SUCCESS / ERROR / INFO) -->
-    @if (alert.type !== 'confirm' && alert.type !== 'session-restart' && alert.type !== 'password-input') {
+    @if (alert.type !== 'confirm' && alert.type !== 'session-restart' && alert.type !== 'password-input' && alert.type !== 'reset-password-step1' && alert.type !== 'reset-password-step2') {
     <button class="alert-button"
             (click)="alertService.close()">
       Aceptar

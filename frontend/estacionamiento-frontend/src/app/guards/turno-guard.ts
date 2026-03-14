@@ -1,9 +1,10 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { map, catchError, of } from 'rxjs';
+import { map, catchError, of, switchMap } from 'rxjs';
 import { ConfigService } from '../services/config.service';
 import { AlertService } from '../core/services/alert';
+import { AuthService } from '../services/auth.service';
 
 export const turnoGuard: CanActivateFn = () => {
 
@@ -11,19 +12,30 @@ export const turnoGuard: CanActivateFn = () => {
   const router = inject(Router);
   const configService = inject(ConfigService);
   const alertService = inject(AlertService);
+  const authService = inject(AuthService);
 
-  return http.get<{ abierto: boolean }>(
-    `${configService.apiUrl}/turnos/mi-turno`
-  ).pipe(
-    map(response => {
+  return authService.verifyEncargado().pipe(
+    switchMap(encargadoResponse => {
 
-      if (response.abierto === false) {
-        return true;
+      if (encargadoResponse.encargado !== true) {
+        alertService.error('No tienes permisos de encargado.');
+        return of(router.createUrlTree(['/dashboard']));
       }
 
-      alertService.error('Ya existe un turno abierto para este usuario.');
+      return http.get<{ abierto: boolean }>(
+        `${configService.apiUrl}/turnos/mi-turno`
+      ).pipe(
+        map(response => {
 
-      return router.createUrlTree(['/dashboard']);
+          if (response.abierto === false) {
+            return true;
+          }
+
+          alertService.error('Ya existe un turno abierto para este usuario.');
+
+          return router.createUrlTree(['/dashboard']);
+        })
+      );
     }),
     catchError((error) => {
 

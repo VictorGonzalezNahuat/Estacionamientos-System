@@ -1,0 +1,216 @@
+<div class="encargados-wrapper">
+	<div class="background-overlay"></div>
+
+	<div class="encargados-container">
+		<div class="header">
+			<h1>👥 Gestión de Encargados</h1>
+		</div>
+
+		<div class="topbar-info">
+			<div class="topbar-label">Roles seleccionados para el backend:</div>
+			<div class="topbar-content">
+				<span class="topbar-item">{{ obtenerResumenRolesFormulario() }}</span>
+			</div>
+		</div>
+
+		<div class="main-content-grid">
+			<div class="form-card">
+				<h2 class="form-title">
+					{{ editandoCodigo() ? '✏️ Editar Usuario' : '➕ Nuevo Encargado' }}
+				</h2>
+
+				<form [formGroup]="encargadoForm" (ngSubmit)="guardarUsuario()" class="form-grid">
+					<div class="form-group">
+						<label>Código</label>
+						<input type="number" formControlName="codigo" placeholder="Ej: 101" min="1" />
+					</div>
+
+					<div class="form-group">
+						<label>Nombre</label>
+						<input type="text" formControlName="nombre" placeholder="Tu nombre aquí" />
+					</div>
+
+					<div class="form-group">
+						<label>Comisión</label>
+						<input
+							type="number"
+							formControlName="comision"
+							placeholder="Ej: 10"
+							step="0.01"
+							min="0"
+						/>
+					</div>
+
+					@if (!editandoCodigo()) {
+					<div class="password-panel full-width">
+						<div class="password-grid">
+							<div class="form-group password-group">
+								<label>Contraseña</label>
+								<div class="password-input-wrap">
+									<input
+										[type]="mostrarPassword() ? 'text' : 'password'"
+										formControlName="password"
+										placeholder="Contraseña del usuario"
+									/>
+									<button type="button" class="btn-toggle-password" (click)="alternarPassword()">
+										{{ mostrarPassword() ? 'Ocultar' : 'Ver' }}
+									</button>
+								</div>
+							</div>
+
+							<div class="form-group password-group">
+								<label>Confirmar contraseña</label>
+								<div class="password-input-wrap">
+									<input
+										[type]="mostrarConfirmPassword() ? 'text' : 'password'"
+										formControlName="confirmPassword"
+										placeholder="Repite la contraseña"
+									/>
+									<button type="button" class="btn-toggle-password" (click)="alternarConfirmPassword()">
+										{{ mostrarConfirmPassword() ? 'Ocultar' : 'Ver' }}
+									</button>
+								</div>
+							</div>
+						</div>
+
+						<div
+							class="password-status"
+							[class.success]="passwordConfirmacionValida()"
+							[class.error]="passwordConfirmacionInvalida()"
+						>
+							{{ estadoConfirmacionPassword() }}
+						</div>
+					</div>
+					} @else {
+					<div class="edit-info full-width">
+						La contraseña del administrador en sesión se solicitará al confirmar la actualización.
+					</div>
+					}
+
+					<div class="form-group full-width" formGroupName="rol">
+						<label>Roles</label>
+						<div class="roles-grid">
+							<label class="role-option">
+								<input type="checkbox" formControlName="admin" />
+								<span>Administrador</span>
+							</label>
+
+							<label class="role-option">
+								<input type="checkbox" formControlName="encargado" />
+								<span>Encargado</span>
+							</label>
+						</div>
+
+						@if (rolesSinPermisosSeleccionados()) {
+						<div class="role-note warning">
+							Si desmarcas ambos roles, el usuario no podra realizar ninguna accion dentro del sistema.
+						</div>
+						}
+					</div>
+
+					<div class="form-group full-width">
+						<label>Observaciones</label>
+						<textarea
+							formControlName="observaciones"
+							placeholder="Notas adicionales para este usuario"
+							rows="2"
+						></textarea>
+					</div>
+					<div class="button-group">
+						<button type="submit" class="btn btn-primary" [disabled]="encargadoForm.invalid || guardando()">
+							{{ guardando() ? '⏳ Guardando...' : (editandoCodigo() ? '💾 Actualizar' : '💾 Guardar') }}
+						</button>
+
+						<button type="button" class="btn btn-secondary" (click)="limpiarFormulario()">
+							🗑️ Limpiar
+						</button>
+
+						@if (editandoCodigo()) {
+						<button type="button" class="btn btn-danger" (click)="cancelarEdicion()">
+							❌ Cancelar
+						</button>
+						}
+					</div>
+				</form>
+			</div>
+
+			<div class="table-card">
+				<div class="table-header">
+					<h2 class="table-title">📊 Usuarios Registrados</h2>
+					<button type="button" class="btn btn-secondary btn-refresh" (click)="cargarUsuarios()">
+						Actualizar
+					</button>
+				</div>
+
+				@if (usuarios().length === 0) {
+				<div class="empty-state">
+					<p>No hay usuarios registrados. Crea el primero desde el formulario.</p>
+				</div>
+				}
+
+				@if (usuarios().length > 0) {
+				<div class="table-wrapper">
+					<table class="encargados-table">
+						<thead>
+							<tr>
+								<th>Código</th>
+								<th>Nombre</th>
+								<th>Comisión</th>
+								<th>Roles</th>
+								<th>Observaciones</th>
+								<th>ID</th>
+								<th>Acciones</th>
+							</tr>
+						</thead>
+						<tbody>
+							@for (usuario of usuarios(); track usuario.id) {
+							<tr [class.highlight]="editandoCodigo() === usuario.codigo">
+								<td class="codigo">{{ usuario.codigo }}</td>
+								<td>{{ usuario.nombre || 'Sin nombre' }}</td>
+								<td>{{ usuario.comision ?? 0 | number: '1.0-2' }}</td>
+								<td>
+									<div class="roles-list">
+										@for (rol of obtenerClasesRol(usuario.rol); track rol) {
+										<span class="role-badge">{{ rol }}</span>
+										}
+
+										@if (obtenerClasesRol(usuario.rol).length === 0) {
+										<span class="role-empty">Sin roles</span>
+										}
+									</div>
+								</td>
+								<td class="observaciones">{{ usuario.observaciones || '—' }}</td>
+								<td>{{ usuario.id }}</td>
+								<td class="actions">
+									<button
+										class="btn-action btn-edit"
+										(click)="editarUsuario(usuario)"
+										title="Editar"
+									>
+										✏️
+									</button>
+									<button
+										class="btn-action btn-reset-pass"
+										(click)="iniciarResetPassword(usuario)"
+										title="Restablecer contraseña"
+									>
+										🔑
+									</button>
+									<button
+										class="btn-action btn-delete"
+										(click)="eliminarUsuario(usuario.codigo)"
+										title="Eliminar"
+									>
+										🗑️
+									</button>
+								</td>
+							</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+				}
+			</div>
+		</div>
+	</div>
+</div>
