@@ -12,6 +12,42 @@ ng serve
 
 Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
 
+## Trusted HTTPS for local testing (macOS)
+
+To test PWA installation correctly on desktop and mobile, use a trusted local certificate.
+
+1. Install mkcert and nss:
+
+```bash
+brew install mkcert nss
+```
+
+2. Generate and trust local certificates (includes your LAN IP automatically when available):
+
+```bash
+npm run https:setup
+```
+
+3. Start Angular with the trusted local cert:
+
+```bash
+npm run start:https
+```
+
+4. Open from desktop:
+
+```text
+https://localhost:4200
+```
+
+5. Open from mobile (same Wi-Fi):
+
+```text
+https://<TU_IP_LOCAL>:4200
+```
+
+Note: if your local IP changes, run `npm run https:setup` again to regenerate the cert including the new IP.
+
 ## Code scaffolding
 
 Angular CLI includes powerful code scaffolding tools. To generate a new component, run:

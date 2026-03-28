@@ -14,6 +14,8 @@
         [(ngModel)]="username"
         name="username"
         autofocus
+        inputmode="text"
+        autocomplete="username"
       />
     </div>
 
@@ -23,6 +25,8 @@
         placeholder="Contraseña"
         [(ngModel)]="password"
         name="password"
+        inputmode="text"
+        autocomplete="current-password"
       />
     </div>
 
@@ -35,7 +39,7 @@
     }
 
     <div class="forgot-password-info">
-      <span class="forgot-icon">🔒</span>
+      <span class="forgot-icon" aria-hidden="true">🔒</span>
       <p>
         <strong>¿Olvidaste tu contraseña?</strong><br>
         Contacta con un administrador para establecer una nueva.

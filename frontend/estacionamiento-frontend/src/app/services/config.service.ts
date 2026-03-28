@@ -1,6 +1,30 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
+import { inject } from '@angular/core';
+
+export interface SystemConfigResponse {
+  DATABASE_CLOUD_USER: string;
+  DATABASE_CLOUD_HOST: string;
+  DATABASE_CLOUD_PORT: number;
+  DATABASE_CLOUD_NAME: string;
+  SYNC_AUTO_ENABLED: boolean;
+  MOBILE_PRINT: boolean;
+  SYNC_INTERVAL_MINUTES: number;
+  ENTRY_TICKET_CODE_TYPE: string;
+}
+
+export interface SystemConfigUpdate {
+  DATABASE_CLOUD_USER: string;
+  DATABASE_CLOUD_PASSWORD: string;
+  DATABASE_CLOUD_HOST: string;
+  DATABASE_CLOUD_PORT: number;
+  DATABASE_CLOUD_NAME: string;
+  SYNC_AUTO_ENABLED: boolean;
+  MOBILE_PRINT: boolean;
+  SYNC_INTERVAL_MINUTES: number;
+  ENTRY_TICKET_CODE_TYPE: string;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -8,8 +32,9 @@ import { firstValueFrom } from 'rxjs';
 export class ConfigService {
 
   private config: any;
+  private http = inject(HttpClient);
 
-  constructor(private http: HttpClient) {}
+  constructor() {}
 
   async loadConfig(): Promise<void> {
     this.config = await firstValueFrom(
@@ -39,5 +64,14 @@ export class ConfigService {
 
   get speechVolume(): number {
     return this.config?.speech?.volume ?? 1;
+  }
+
+  // Métodos para la configuración del sistema
+  getSystemConfig(): Observable<SystemConfigResponse> {
+    return this.http.get<SystemConfigResponse>(`${this.apiUrl}/config/`);
+  }
+
+  updateSystemConfig(config: SystemConfigUpdate): Observable<SystemConfigResponse> {
+    return this.http.patch<SystemConfigResponse>(`${this.apiUrl}/config/`, config);
   }
 }

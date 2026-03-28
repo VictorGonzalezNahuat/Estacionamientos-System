@@ -1,0 +1,192 @@
+<div class="configuracion-container">
+  <div class="config-header">
+    <h1>Configuración del Sistema</h1>
+    <p>Administra la conexión, sincronización y emisión de tickets.</p>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-message">
+    <p>Cargando configuración...</p>
+  </div>
+
+  <form [formGroup]="configForm" (ngSubmit)="onSubmit()" *ngIf="!isLoading" class="config-form">
+    <section class="config-group full-width">
+      <div class="config-group-header">
+        <h2>Credenciales de base de datos en la nube</h2>
+        <p>Estos datos se usan para conectar y sincronizar con la base de datos cloud.</p>
+      </div>
+
+      <div class="config-group-grid">
+        <!-- Usuario de base de datos -->
+        <div class="form-group">
+          <label for="databaseUser">Usuario de base de datos:</label>
+          <input
+            type="text"
+            id="databaseUser"
+            formControlName="DATABASE_CLOUD_USER"
+            placeholder="Ej: admin"
+            class="form-control"
+          />
+          <small *ngIf="configForm.get('DATABASE_CLOUD_USER')?.invalid && configForm.get('DATABASE_CLOUD_USER')?.touched"
+            class="error-message">
+            El usuario de base de datos es requerido
+          </small>
+        </div>
+
+        <!-- Contraseña de base de datos -->
+        <div class="form-group">
+          <label for="databasePassword">Contraseña de base de datos:</label>
+          <input
+            type="password"
+            id="databasePassword"
+            formControlName="DATABASE_CLOUD_PASSWORD"
+            placeholder="Ingresa la contraseña para autorizar cambios"
+            class="form-control"
+            autocomplete="new-password"
+          />
+          <small class="helper-message">
+            Por seguridad, la contraseña siempre debe capturarse para guardar cambios.
+          </small>
+          <small *ngIf="configForm.get('DATABASE_CLOUD_PASSWORD')?.invalid && configForm.get('DATABASE_CLOUD_PASSWORD')?.touched"
+            class="error-message">
+            La contraseña es obligatoria para actualizar la configuración
+          </small>
+        </div>
+
+        <!-- Host de base de datos -->
+        <div class="form-group">
+          <label for="databaseHost">Host de base de datos:</label>
+          <input
+            type="text"
+            id="databaseHost"
+            formControlName="DATABASE_CLOUD_HOST"
+            placeholder="Ej: cluster0.mongodb.net"
+            class="form-control"
+          />
+          <small *ngIf="configForm.get('DATABASE_CLOUD_HOST')?.invalid && configForm.get('DATABASE_CLOUD_HOST')?.touched"
+            class="error-message">
+            El host de base de datos es requerido
+          </small>
+        </div>
+
+        <!-- Puerto de base de datos -->
+        <div class="form-group">
+          <label for="databasePort">Puerto de base de datos:</label>
+          <input
+            type="number"
+            id="databasePort"
+            formControlName="DATABASE_CLOUD_PORT"
+            min="1"
+            class="form-control"
+          />
+          <small *ngIf="configForm.get('DATABASE_CLOUD_PORT')?.invalid && configForm.get('DATABASE_CLOUD_PORT')?.touched"
+            class="error-message">
+            El puerto debe ser mayor a 0
+          </small>
+        </div>
+
+        <!-- Nombre de base de datos -->
+        <div class="form-group full-width">
+          <label for="databaseName">Nombre de base de datos:</label>
+          <input
+            type="text"
+            id="databaseName"
+            formControlName="DATABASE_CLOUD_NAME"
+            placeholder="Ej: estacionamiento_prod"
+            class="form-control"
+          />
+          <small *ngIf="configForm.get('DATABASE_CLOUD_NAME')?.invalid && configForm.get('DATABASE_CLOUD_NAME')?.touched"
+            class="error-message">
+            El nombre de base de datos es requerido
+          </small>
+        </div>
+      </div>
+    </section>
+
+    <!-- Auto Sync -->
+    <div class="sync-switch-card full-width">
+      <div class="sync-switch-copy">
+        <h3>Sincronización automática</h3>
+        <p>Activa el envío periódico de información hacia la nube.</p>
+      </div>
+
+      <label class="sync-switch" for="syncAutoEnabled" aria-label="Habilitar sincronización automática">
+        <input
+          type="checkbox"
+          id="syncAutoEnabled"
+          formControlName="SYNC_AUTO_ENABLED"
+        />
+        <span class="sync-slider"></span>
+      </label>
+    </div>
+
+    <!-- Mobile Print -->
+    <div class="sync-switch-card full-width">
+      <div class="sync-switch-copy">
+        <h3>Impresión QR móvil</h3>
+        <p>Permite imprimir el QR extra para que el cliente consulte el estado de su vehículo.</p>
+      </div>
+
+      <label class="sync-switch" for="mobilePrint" aria-label="Habilitar impresión QR móvil">
+        <input
+          type="checkbox"
+          id="mobilePrint"
+          formControlName="MOBILE_PRINT"
+        />
+        <span class="sync-slider"></span>
+      </label>
+    </div>
+
+    <!-- Sync Interval -->
+    <div class="form-group">
+      <label for="syncInterval">Intervalo de sincronización (minutos):</label>
+      <input
+        type="number"
+        id="syncInterval"
+        formControlName="SYNC_INTERVAL_MINUTES"
+        min="1"
+        class="form-control"
+      />
+      <small *ngIf="configForm.get('SYNC_INTERVAL_MINUTES')?.invalid && configForm.get('SYNC_INTERVAL_MINUTES')?.touched"
+        class="error-message">
+        El intervalo debe ser mayor a 0
+      </small>
+    </div>
+
+    <!-- Tipo de código de entrada -->
+    <div class="form-group">
+      <label for="ticketCodeType">Tipo de código de entrada:</label>
+      <select
+        id="ticketCodeType"
+        formControlName="ENTRY_TICKET_CODE_TYPE"
+        class="form-control"
+      >
+        <option value="">-- Selecciona un tipo --</option>
+        <option value="QR">QR</option>
+        <option value="BARCODE">Código de barras</option>
+      </select>
+      <small *ngIf="configForm.get('ENTRY_TICKET_CODE_TYPE')?.invalid && configForm.get('ENTRY_TICKET_CODE_TYPE')?.touched"
+        class="error-message">
+        El tipo de código es requerido
+      </small>
+    </div>
+
+    <!-- Botones de acción -->
+    <div class="form-actions full-width">
+      <button
+        type="submit"
+        [disabled]="configForm.invalid || isSaving"
+        class="btn btn-primary"
+      >
+        {{ isSaving ? 'Guardando...' : 'Guardar configuración' }}
+      </button>
+      <button
+        type="button"
+        (click)="onReset()"
+        [disabled]="isSaving"
+        class="btn btn-secondary"
+      >
+        Cancelar
+      </button>
+    </div>
+  </form>
+</div>

@@ -1,0 +1,80 @@
+<section class="mobile-access">
+	<div class="topbar">
+		<div class="topbar-logo" aria-label="Logo estacionamiento">
+			<img src="/favicon.ico" alt="Logo" width="32" height="32" style="display:block; border-radius:8px;" />
+		</div>
+		<div class="topbar-status" aria-label="Estado de cámara">
+			<span class="camera-status" [class.active]="scanning()">
+				<svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+					<rect x="3" y="6" width="16" height="10" rx="3" fill="#fff" fill-opacity="0.18" stroke="#fff" stroke-width="1.2"/>
+					<circle cx="11" cy="11" r="2.5" [attr.fill]="scanning() ? '#22c55e' : '#fbbf24'"/>
+				</svg>
+				<span class="camera-label">{{ scanning() ? 'Cámara activa' : 'Cámara inactiva' }}</span>
+			</span>
+			<button type="button" class="logout-btn" (click)="logout()" aria-label="Cerrar sesión" title="Cerrar sesión">
+				<svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+					<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+					<polyline points="16 17 21 12 16 7" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+					<line x1="21" y1="12" x2="9" y2="12" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+				</svg>
+			</button>
+		</div>
+	</div>
+	<div class="background-overlay" aria-hidden="true"></div>
+
+	<div class="mobile-shell">
+		<header class="hero-card">
+			<p class="eyebrow">Sistema de Estacionamiento</p>
+			<h1>Salida movil</h1>
+			<p class="description">
+				Escanea el ticket del vehiculo para registrar la salida sin pasar por el panel principal.
+			</p>
+
+			<div class="quick-info" aria-label="Informacion de acceso movil">
+				<span class="badge badge-blue">QR</span>
+				<span class="badge badge-amber">Codigo de barras</span>
+				<span class="badge badge-muted">Uso exclusivo movil</span>
+			</div>
+		</header>
+
+		<div class="action-card">
+			<button
+				type="button"
+				class="scan-btn"
+				(click)="startScanner()"
+				[disabled]="loading() || scanning()"
+			>
+				{{ loading() ? 'Procesando salida...' : 'Iniciar escaneo' }}
+			</button>
+
+			<p class="helper-text">Permite camara trasera para una lectura mas rapida y estable.</p>
+
+			@if (scannerError()) {
+				<p class="error-msg">{{ scannerError() }}</p>
+			}
+		</div>
+	</div>
+
+	@if (scanning()) {
+		<div class="scanner-modal" role="dialog" aria-modal="true" aria-label="Escaner de codigos">
+			<div class="scanner-card">
+				<div class="scanner-head">
+					<h2>Escaneando ticket</h2>
+					<p>Coloca el codigo dentro del recuadro.</p>
+				</div>
+
+				<div class="video-frame">
+					<video #videoPreview autoplay playsinline muted></video>
+					<div class="scan-mask" aria-hidden="true">
+						<span class="corner corner-tl"></span>
+						<span class="corner corner-tr"></span>
+						<span class="corner corner-bl"></span>
+						<span class="corner corner-br"></span>
+					</div>
+				</div>
+
+				<button type="button" class="close-btn" (click)="closeScanner()">Cancelar</button>
+			</div>
+		</div>
+	}
+</section>

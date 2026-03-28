@@ -116,40 +116,29 @@
             </div>
 
             <div class="autos-list">
-                @for (auto of estacionados(); track auto.placa) {
-                <div class="auto-card">
-
-                    <div class="plate">
-                        <div class="plate-header">
-                            <div class="state-badge">T</div>
-                            <div class="maya-symbol">❖</div>
-                            <div class="header-text">
-                                <span class="subtitle">Estacionamiento</span>
-                                <div class="title">Yucatán</div>
-                                <span class="gov">Gobierno del Estado · 2024–2030</span>
-                            </div>
-                            <div class="vigencia">
-                                <span>Vigencia</span>
-                                <strong>2025–2028</strong>
-                            </div>
-                        </div>
-
-                        <div class="plate-body">
-                            <div class="plate-number">{{ auto.placa }}</div>
-                        </div>
-
-                        <div class="plate-strip"></div>
-
-                        <div class="plate-footer">
-                            <span>Transporte Privado Automóvil</span>
-                        </div>
-                    </div>
-
-                    <div class="detalle">
-                        <span>{{ auto.fecha_entrada }}</span>
-                        <span>{{ auto.hora_entrada }}</span>
-                    </div>
-                </div>
+                @if (estacionados().length === 0) {
+                <div class="autos-empty">No hay autos dentro en este momento.</div>
+                } @else {
+                <table class="autos-table" aria-label="Listado de autos dentro">
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Placa</th>
+                            <th scope="col">Fecha</th>
+                            <th scope="col">Hora</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (auto of estacionados(); track auto.placa; let i = $index) {
+                        <tr>
+                            <td>{{ i + 1 }}</td>
+                            <td class="cell-placa">{{ auto.placa }}</td>
+                            <td>{{ auto.fecha_entrada }}</td>
+                            <td>{{ auto.hora_entrada }}</td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
                 }
             </div>
         </div>

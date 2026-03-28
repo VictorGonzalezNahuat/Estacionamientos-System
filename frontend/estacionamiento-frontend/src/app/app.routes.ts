@@ -6,6 +6,7 @@ import { entradasSalidasGuard } from './guards/entradas-salidas-guard';
 import { tarifasGuard } from './guards/tarifas-guard';
 import { encargadosGuard } from './guards/encargados-guard';
 import { corteCajaGuard } from './guards/corte-caja-guard';
+import { configuracionGuard } from './guards/configuracion-guard';
 
 export const routes: Routes = [
   {
@@ -54,9 +55,19 @@ export const routes: Routes = [
       {
         path: 'estacionados',
         loadComponent: () => import('./pages/dashboard/estacionados/estacionados').then(m => m.Estacionados)
+      },
+      {
+        path: 'configuracion',
+        loadComponent: () => import('./pages/dashboard/configuracion/configuracion').then(m => m.Configuracion),
+        canActivate: [configuracionGuard]
       }
 
     ]
+  },
+  {
+    path: 'acceso-movil',
+    loadComponent: () => import('./pages/acceso-movil/acceso-movil').then(m => m.AccesoMovil),
+    canActivate: [authGuard]
   },
   { path: '', redirectTo: 'login', pathMatch: 'full' }
 ];

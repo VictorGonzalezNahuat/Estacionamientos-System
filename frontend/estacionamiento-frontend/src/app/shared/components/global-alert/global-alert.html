@@ -9,17 +9,18 @@
        [class.session-restart]="alert.type === 'session-restart'"
        [class.password-input]="alert.type === 'password-input'"
        [class.reset-password-step1]="alert.type === 'reset-password-step1'"
-       [class.reset-password-step2]="alert.type === 'reset-password-step2'">
+      [class.reset-password-step2]="alert.type === 'reset-password-step2'"
+      [class.pending-messages]="alert.type === 'pending-messages'">
 
     <!-- ICONO -->
     @if (alert.type !== 'info') {
     <div class="alert-icon">
-      {{ alert.type === 'success' ? '✔' : alert.type === 'confirm' ? '❓' : alert.type === 'session-restart' ? '🔄' : alert.type === 'password-input' ? '🔐' : alert.type === 'reset-password-step1' || alert.type === 'reset-password-step2' ? '🔑' : '⚠' }}
+      {{ alert.type === 'success' ? '✔' : alert.type === 'confirm' ? '❓' : alert.type === 'session-restart' ? '🔄' : alert.type === 'password-input' ? '🔐' : alert.type === 'reset-password-step1' || alert.type === 'reset-password-step2' ? '🔑' : alert.type === 'pending-messages' ? '🔔' : '⚠' }}
     </div>
     }
 
     <!-- TÍTULO PARA CONFIRM / SESSION-RESTART / PASSWORD-INPUT -->
-    @if ((alert.type === 'confirm' || alert.type === 'session-restart' || alert.type === 'password-input' || alert.type === 'reset-password-step1' || alert.type === 'reset-password-step2') && alert.title) {
+    @if ((alert.type === 'confirm' || alert.type === 'session-restart' || alert.type === 'password-input' || alert.type === 'reset-password-step1' || alert.type === 'reset-password-step2' || alert.type === 'pending-messages') && alert.title) {
     <div class="alert-title">
       {{ alert.title }}
     </div>
@@ -29,6 +30,18 @@
     @if (alert.message) {
     <div [class.alert-message]="alert.type === 'confirm' || alert.type === 'session-restart' || alert.type === 'password-input' || alert.type === 'reset-password-step1' || alert.type === 'reset-password-step2'">
       {{ alert.message }}
+    </div>
+    }
+
+    <!-- MODO MENSAJES PENDIENTES -->
+    @if (alert.type === 'pending-messages') {
+    <div class="pending-messages-container">
+      <p class="pending-messages-caption">Tienes los siguientes mensajes pendientes:</p>
+      <ul class="pending-messages-list">
+        @for (message of alert.data?.messages ?? []; track $index) {
+        <li class="pending-message-item">{{ message }}</li>
+        }
+      </ul>
     </div>
     }
 
@@ -205,8 +218,16 @@
     </button>
     }
 
+        <!-- BOTON MENSAJES PENDIENTES -->
+        @if (alert.type === 'pending-messages') {
+        <button class="alert-button btn-mark-read"
+        (click)="alertService.markCurrentAlertAsRead()">
+      {{ alert.confirmText || 'Marcar como leido' }}
+        </button>
+        }
+
     <!-- BOTÓN GLOBAL (para SUCCESS / ERROR / INFO) -->
-    @if (alert.type !== 'confirm' && alert.type !== 'session-restart' && alert.type !== 'password-input' && alert.type !== 'reset-password-step1' && alert.type !== 'reset-password-step2') {
+        @if (alert.type !== 'confirm' && alert.type !== 'session-restart' && alert.type !== 'password-input' && alert.type !== 'reset-password-step1' && alert.type !== 'reset-password-step2' && alert.type !== 'pending-messages') {
     <button class="alert-button"
             (click)="alertService.close()">
       Aceptar

@@ -1,0 +1,536 @@
+/*
+  Estacionamiento UI Theme
+  Reusable base stylesheet to keep the same visual language across projects.
+*/
+
+:root {
+  --ep-font-sans: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --ep-font-mono: "Courier New", Courier, monospace;
+
+  --ep-bg-image: url('/parking.jpg');
+  --ep-login-bg-image: url('/parking.png');
+
+  --ep-ink-950: #0f172a;
+  --ep-ink-900: #1e293b;
+  --ep-ink-700: #334155;
+
+  --ep-blue-900: #1e3a8a;
+  --ep-blue-800: #1e40af;
+  --ep-blue-700: #1d4ed8;
+  --ep-blue-600: #2563eb;
+  --ep-blue-500: #3b82f6;
+  --ep-blue-300: #93c5fd;
+
+  --ep-amber-500: #f59e0b;
+  --ep-amber-400: #fbbf24;
+  --ep-emerald-500: #22c55e;
+  --ep-red-500: #ef4444;
+
+  --ep-white: #ffffff;
+  --ep-text-dark: #111827;
+  --ep-text-muted: #9ca3af;
+
+  --ep-glass-strong: rgba(255, 255, 255, 0.18);
+  --ep-glass-soft: rgba(255, 255, 255, 0.12);
+  --ep-glass-line: rgba(255, 255, 255, 0.30);
+
+  --ep-overlay: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(37, 99, 235, 0.85));
+
+  --ep-radius-xs: 8px;
+  --ep-radius-sm: 12px;
+  --ep-radius-md: 16px;
+  --ep-radius-lg: 24px;
+
+  --ep-shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.2);
+  --ep-shadow-md: 0 12px 30px rgba(0, 0, 0, 0.28);
+  --ep-shadow-lg: 0 30px 70px rgba(0, 0, 0, 0.4);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  font-family: var(--ep-font-sans);
+  color: var(--ep-white);
+  scrollbar-gutter: stable;
+}
+
+/* Shared immersive background */
+.ep-page-bg,
+.login-wrapper,
+.dashboard-container,
+.turno-wrapper,
+.tarifas-wrapper,
+.encargados-wrapper,
+.entradas-wrapper,
+.estacionados-page {
+  position: relative;
+  background-image: var(--ep-bg-image);
+  background-size: cover;
+  background-position: center;
+}
+
+.login-wrapper {
+  background-image: var(--ep-login-bg-image);
+}
+
+.ep-overlay,
+.background-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--ep-overlay);
+  z-index: 0;
+}
+
+/* Glass cards */
+.ep-card-glass,
+.login-card,
+.turno-card,
+.content-card,
+.form-card,
+.table-card,
+.entrada-card,
+.acciones-card,
+.cars-sidebar,
+.page-header,
+.topbar-estado,
+.topbar-default,
+.topbar-info,
+.custom-alert {
+  background: var(--ep-glass-strong);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--ep-glass-line);
+  border-radius: var(--ep-radius-lg);
+  box-shadow: var(--ep-shadow-lg);
+}
+
+/* Topbar */
+.topbar {
+  height: 90px;
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  position: relative;
+  z-index: 20;
+
+  background: rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.topbar-info,
+.tariff-badge,
+.user-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 14px;
+  padding: 10px 16px;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(147, 197, 253, 0.4);
+}
+
+/* Typography */
+.brand-title,
+.page-title,
+h1.ep-title {
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.brand-title {
+  font-size: clamp(2rem, 4vw, 2.4rem);
+  background: linear-gradient(135deg, #ffffff, rgba(251, 191, 36, 0.9));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle,
+.ep-subtitle,
+.page-copy {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.plate,
+.placa-input,
+.topbar-item,
+.topbar-code {
+  font-family: var(--ep-font-mono);
+}
+
+/* Inputs */
+.ep-input,
+.form-group input,
+.form-group select,
+.form-group textarea,
+.placa-input,
+.password-input-field {
+  width: 100%;
+  border: none;
+  outline: none;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 16px;
+  color: var(--ep-text-dark);
+  background: rgba(255, 255, 255, 0.95);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder,
+.placa-input::placeholder,
+.password-input-field::placeholder {
+  color: var(--ep-text-muted);
+}
+
+.ep-input:focus,
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus,
+.placa-input:focus,
+.password-input-field:focus {
+  background: var(--ep-white);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.25), 0 0 0 8px rgba(251, 191, 36, 0.1);
+  transform: translateY(-2px);
+}
+
+.placa-input {
+  font-size: clamp(1.2rem, 3vw, 1.75rem);
+  letter-spacing: 4px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* Buttons */
+.ep-btn,
+button,
+.login-btn,
+.primary-btn,
+.secondary-btn,
+.btn,
+.alert-button,
+.action-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
+}
+
+.ep-btn-primary,
+.login-btn,
+.primary-btn,
+.btn-primary {
+  color: var(--ep-white);
+  background: linear-gradient(135deg, var(--ep-blue-600), var(--ep-blue-800));
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.35);
+}
+
+.ep-btn-secondary,
+.secondary-btn,
+.btn-secondary {
+  color: var(--ep-white);
+  background: rgba(71, 85, 105, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.45);
+}
+
+.btn-danger {
+  color: var(--ep-white);
+  background: rgba(220, 38, 38, 0.9);
+}
+
+.btn-warning {
+  color: var(--ep-white);
+  background: rgba(217, 119, 6, 0.9);
+}
+
+.ep-btn:hover:not(:disabled),
+button:hover:not(:disabled),
+.login-btn:hover:not(:disabled),
+.primary-btn:hover:not(:disabled),
+.secondary-btn:hover:not(:disabled),
+.btn:hover:not(:disabled),
+.alert-button:hover:not(:disabled),
+.action-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--ep-shadow-md);
+  filter: brightness(1.03);
+}
+
+.ep-btn:disabled,
+button:disabled,
+.btn:disabled,
+.primary-btn:disabled,
+.secondary-btn:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Badge and status blocks */
+.ep-badge,
+.price-item,
+.role-badge,
+.cars-count {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.ep-badge-blue,
+.price-item,
+.role-badge,
+.cars-count {
+  color: #dbeafe;
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(147, 197, 253, 0.35);
+}
+
+.ep-badge-amber {
+  color: #fef3c7;
+  background: rgba(251, 191, 36, 0.2);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+}
+
+.ep-badge-success {
+  color: #dcfce7;
+  background: rgba(34, 197, 94, 0.2);
+  border: 1px solid rgba(74, 222, 128, 0.35);
+}
+
+/* Data cards */
+.info-box,
+.info-card,
+.auto-card {
+  border-radius: var(--ep-radius-md);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  background: rgba(59, 130, 246, 0.08);
+  box-shadow: var(--ep-shadow-sm);
+}
+
+.info-box,
+.info-card {
+  padding: 14px 16px;
+}
+
+.auto-card {
+  padding: 14px;
+  border-left: 4px solid rgba(59, 130, 246, 0.7);
+}
+
+/* Tables */
+.ep-table-shell,
+.table-wrapper {
+  overflow: auto;
+}
+
+.ep-table,
+table,
+.tarifas-table,
+.encargados-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.ep-table thead,
+thead {
+  background: linear-gradient(180deg, #eff6ff, #e0ecff);
+}
+
+.ep-table th,
+.ep-table td,
+th,
+td {
+  padding: 12px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.ep-table th,
+th {
+  font-size: 0.76rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #1e3a8a;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.ep-table tbody tr,
+tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.ep-table tbody tr:nth-child(even),
+tbody tr:nth-child(even) {
+  background: #f8fbff;
+}
+
+.ep-table tbody tr:hover,
+tbody tr:hover {
+  background: #eaf3ff;
+}
+
+/* Modal / Alert */
+.custom-alert-overlay,
+.ep-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.custom-alert,
+.ep-modal {
+  min-width: min(92vw, 320px);
+  max-width: min(92vw, 460px);
+  padding: 24px;
+  border-radius: 20px;
+  background: var(--ep-ink-900);
+  border: 1px solid var(--ep-ink-700);
+  color: var(--ep-white);
+}
+
+.custom-alert.success {
+  border-left: 6px solid var(--ep-emerald-500);
+}
+
+.custom-alert.error {
+  border-left: 6px solid var(--ep-red-500);
+}
+
+.custom-alert.confirm {
+  border-left: 6px solid var(--ep-amber-500);
+}
+
+/* Layout helpers */
+.ep-shell,
+.layout,
+.main-layout {
+  position: relative;
+  z-index: 1;
+}
+
+.main-layout {
+  display: flex;
+  min-height: calc(100vh - 90px);
+}
+
+.content-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar {
+  width: min(400px, 35vw);
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 23, 42, 0.78);
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+/* Motion */
+@keyframes ep-float-in {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-card,
+.turno-card,
+.content-card,
+.form-card,
+.table-card,
+.page-header,
+.custom-alert {
+  animation: ep-float-in 0.45s ease-out both;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .topbar {
+    height: auto;
+    padding: 10px 16px;
+    flex-wrap: wrap;
+  }
+
+  .main-layout,
+  .main-content-grid,
+  .content-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+  }
+}
+
+@media (max-width: 768px) {
+  .login-card,
+  .turno-card,
+  .content-card,
+  .form-card,
+  .table-card,
+  .entrada-card,
+  .acciones-card,
+  .cars-sidebar,
+  .page-header,
+  .custom-alert {
+    border-radius: 16px;
+    padding: 16px;
+  }
+
+  .brand-title,
+  .page-title,
+  h1.ep-title {
+    font-size: 1.5rem;
+  }
+
+  .ep-btn,
+  button,
+  .btn,
+  .primary-btn,
+  .secondary-btn {
+    width: 100%;
+  }
+}

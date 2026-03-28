@@ -2,14 +2,14 @@ import { Injectable, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
 
 export interface AlertMessage {
-  type: 'success' | 'error' | 'info' | 'confirm' | 'session-restart' | 'password-input' | 'reset-password-step1' | 'reset-password-step2';
+  type: 'success' | 'error' | 'info' | 'confirm' | 'session-restart' | 'password-input' | 'reset-password-step1' | 'reset-password-step2' | 'pending-messages';
   message?: string;
 
   // NUEVO
   title?: string;
   data?: any;
   persistent?: boolean; // si no se debe cerrar sola
-  onConfirm?: () => void;
+  onConfirm?: () => void | boolean | Promise<void | boolean>;
   onCancel?: () => void;
   onClose?: () => void;
   confirmText?: string;
@@ -47,6 +47,23 @@ export class AlertService {
       title,
       data,
       persistent: true
+    });
+  }
+
+  pendingMessages(
+    messages: string[],
+    onConfirm: () => void,
+    onClose?: () => void,
+    title: string = 'Mensajes pendientes'
+  ) {
+    this.show({
+      type: 'pending-messages',
+      title,
+      data: { messages },
+      persistent: true,
+      confirmText: 'Marcar como leido',
+      onConfirm,
+      onClose,
     });
   }
 
@@ -174,6 +191,24 @@ export class AlertService {
     setTimeout(() => {
       window.location.href = '/login';
     }, 300);
+  }
+
+  markCurrentAlertAsRead() {
+    const currentAlert = this.alertState();
+    if (!currentAlert?.onConfirm) {
+      this.close();
+      return;
+    }
+
+    try {
+      const result = currentAlert.onConfirm();
+      if (result === false) {
+        return;
+      }
+      this.close();
+    } catch (error) {
+      console.error('Error al marcar alerta como leida:', error);
+    }
   }
 
   close() {

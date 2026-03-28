@@ -17,12 +17,72 @@ html, body {
   -webkit-backdrop-filter: none !important;
 }
 
-/* Freeze decorative motion and compositing-heavy transitions */
+/* ===============================================================
+   LIGHTWEIGHT MOTION — GPU-composited only.
+   Only 'opacity' and 'transform' animate; zero layout triggers.
+   Safe for i3 + integrated graphics.
+   =============================================================== */
+
+/* Block all keyframe animations globally */
 *, *::before, *::after {
   animation: none !important;
-  transition-property: none !important;
-  transition-duration: 0s !important;
+}
+
+/* Restrict transitions to GPU-composited properties only.
+   This replaces ANY component-level transition with a safe one. */
+*, *::before, *::after {
+  transition-property: opacity, transform !important;
+  transition-duration: 150ms !important;
+  transition-timing-function: ease-out !important;
   transition-delay: 0s !important;
+}
+
+/* Entrance: fade-in + 8px lift for major page containers.
+   .form-card and .table-card already have staggered specificity
+   so they appear slightly after each other naturally. */
+@keyframes lp-fade-slide {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+.login-card {
+  animation: lp-fade-slide 240ms ease-out both !important;
+}
+
+.page-header,
+[class*="topbar"] {
+  animation: lp-fade-slide 180ms ease-out both !important;
+}
+
+.form-card,
+[class*="main-card"] {
+  animation: lp-fade-slide 200ms ease-out both !important;
+}
+
+.table-card {
+  animation: lp-fade-slide 220ms ease-out both !important;
+}
+
+/* Button micro-interaction: subtle lift on hover, press on active */
+button:hover,
+[class*="btn"]:hover {
+  transform: translateY(-1px) !important;
+  opacity: 0.93 !important;
+}
+
+button:active,
+[class*="btn"]:active {
+  transform: scale(0.97) !important;
+  opacity: 1 !important;
+}
+
+/* Table row: slight opacity highlight on hover (no background repaint needed) */
+.table-card tbody tr {
+  transition-duration: 100ms !important;
+}
+
+.table-card tbody tr:hover {
+  opacity: 0.85 !important;
 }
 
 /* Keep visual hierarchy with lighter shadows */
@@ -37,11 +97,4 @@ html, body {
 button,
 [class*="btn"] {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18) !important;
-}
-
-button:hover,
-[class*="btn"]:hover,
-[class*="card"]:hover,
-[class*="panel"]:hover {
-  transform: none !important;
 }

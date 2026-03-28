@@ -1,0 +1,357 @@
+.mobile-access {
+	min-height: 100dvh;
+	position: relative;
+	display: flex;
+	justify-content: center;
+	align-items: flex-start;
+	/* Ajuste de padding-top para dejar espacio a la topbar */
+	padding: calc(3.5rem + max(1.1rem, env(safe-area-inset-top))) 1rem max(1.1rem, env(safe-area-inset-bottom));
+	overflow: hidden;
+	background-image: url('/parking.jpg');
+	background-size: cover;
+	background-position: center;
+}
+
+/* Barra superior fija */
+.topbar {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 3.5rem;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	background: rgba(15, 23, 42, 0.98);
+	border-bottom: 1.5px solid rgba(59, 130, 246, 0.18);
+	z-index: 1200;
+	padding: 0 1.1rem;
+	box-sizing: border-box;
+	backdrop-filter: blur(8px);
+}
+.topbar-logo {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+.topbar-logo svg {
+	display: block;
+	height: 2.1rem;
+	width: 2.1rem;
+}
+.topbar-status {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+.camera-status {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	font-size: 0.98rem;
+	font-weight: 600;
+	color: #fbbf24;
+	transition: color 0.2s;
+}
+.camera-status.active {
+	color: #22c55e;
+}
+.camera-status svg {
+	width: 1.5rem;
+	height: 1.5rem;
+	display: block;
+}
+.camera-label {
+	display: none;
+}
+@media (min-width: 400px) {
+	.camera-label {
+		display: inline;
+	}
+}
+
+.logout-btn {
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 0.4rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 0.5rem;
+	transition: background-color 0.2s;
+	color: #f8fafc;
+}
+
+.logout-btn:hover {
+	background-color: rgba(239, 68, 68, 0.2);
+}
+
+.logout-btn:active {
+	background-color: rgba(239, 68, 68, 0.3);
+}
+
+.logout-btn svg {
+	width: 1.5rem;
+	height: 1.5rem;
+	display: block;
+}
+
+.background-overlay {
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(37, 99, 235, 0.86));
+	z-index: 0;
+}
+
+.mobile-shell {
+	position: relative;
+	z-index: 1;
+	width: min(100%, 430px);
+	display: flex;
+	flex-direction: column;
+	gap: 0.9rem;
+	margin-top: 0.35rem;
+}
+
+.hero-card,
+.action-card {
+	background: rgba(255, 255, 255, 0.14);
+	border: 1px solid rgba(255, 255, 255, 0.32);
+	border-top: 1px solid rgba(255, 255, 255, 0.45);
+	border-radius: 1.25rem;
+	box-shadow:
+		0 26px 52px rgba(2, 6, 23, 0.34),
+		inset 0 1px 1px rgba(255, 255, 255, 0.2);
+	padding: 1.05rem;
+	color: #f8fafc;
+}
+
+.eyebrow {
+	margin: 0;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.3rem;
+	padding: 0.25rem 0.65rem;
+	border-radius: 999px;
+	font-size: 0.7rem;
+	font-weight: 700;
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+	color: #dbeafe;
+	background: rgba(59, 130, 246, 0.2);
+	border: 1px solid rgba(147, 197, 253, 0.4);
+}
+
+h1 {
+	margin: 0.7rem 0 0.4rem;
+	font-size: clamp(1.45rem, 5vw, 1.8rem);
+	line-height: 1.2;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	text-shadow: 0 2px 8px rgba(0, 0, 0, 0.26);
+}
+
+.description {
+	margin: 0;
+	font-size: 0.95rem;
+	line-height: 1.45;
+	color: rgba(241, 245, 249, 0.92);
+}
+
+.quick-info {
+	margin-top: 0.85rem;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.45rem;
+}
+
+.badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 0.28rem 0.7rem;
+	border-radius: 999px;
+	font-size: 0.73rem;
+	font-weight: 700;
+	letter-spacing: 0.03em;
+	border: 1px solid transparent;
+}
+
+.badge-blue {
+	background: rgba(59, 130, 246, 0.2);
+	color: #dbeafe;
+	border-color: rgba(147, 197, 253, 0.4);
+}
+
+.badge-amber {
+	background: rgba(251, 191, 36, 0.2);
+	color: #fef3c7;
+	border-color: rgba(251, 191, 36, 0.42);
+}
+
+.badge-muted {
+	background: rgba(148, 163, 184, 0.2);
+	color: #e2e8f0;
+	border-color: rgba(203, 213, 225, 0.34);
+}
+
+.scan-btn {
+	width: 100%;
+	border: none;
+	border-radius: 0.9rem;
+	padding: 0.95rem 1rem;
+	font-size: 1rem;
+	font-weight: 800;
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+	color: #ffffff;
+	background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
+	box-shadow: 0 12px 26px rgba(37, 99, 235, 0.35);
+	cursor: pointer;
+}
+
+.scan-btn:disabled {
+	opacity: 0.62;
+	cursor: not-allowed;
+}
+
+.helper-text {
+	margin: 0.75rem 0 0;
+	font-size: 0.8rem;
+	line-height: 1.45;
+	color: rgba(226, 232, 240, 0.86);
+}
+
+.error-msg {
+	margin: 0.8rem 0 0;
+	padding: 0.7rem 0.78rem;
+	border-radius: 0.8rem;
+	font-size: 0.84rem;
+	font-weight: 600;
+	line-height: 1.35;
+	color: #fecaca;
+	background: rgba(127, 29, 29, 0.82);
+	border: 1px solid rgba(239, 68, 68, 0.58);
+	border-left: 3px solid #ef4444;
+}
+
+.scanner-modal {
+	position: fixed;
+	inset: 0;
+	z-index: 1100;
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+	padding: 0.75rem;
+	background: rgba(2, 6, 23, 0.86);
+}
+
+.scanner-card {
+	width: min(100%, 440px);
+	border-radius: 1.15rem;
+	padding: 0.95rem;
+	background: rgba(15, 23, 42, 0.96);
+	border: 1px solid rgba(148, 163, 184, 0.35);
+	box-shadow: 0 28px 60px rgba(2, 6, 23, 0.55);
+	color: #f8fafc;
+}
+
+.scanner-head h2 {
+	margin: 0;
+	font-size: 1.1rem;
+	letter-spacing: 0.01em;
+}
+
+.scanner-head p {
+	margin: 0.28rem 0 0.7rem;
+	font-size: 0.87rem;
+	color: #cbd5e1;
+}
+
+.video-frame {
+	position: relative;
+	border-radius: 1rem;
+	overflow: hidden;
+	background: #020617;
+	border: 1px solid rgba(148, 163, 184, 0.46);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+video {
+	display: block;
+	width: 100%;
+	aspect-ratio: 4 / 3;
+	object-fit: cover;
+}
+
+.scan-mask {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	display: block;
+}
+
+.corner {
+	position: absolute;
+	width: 28px;
+	height: 28px;
+	border: 3px solid rgba(251, 191, 36, 0.95);
+}
+
+.corner-tl {
+	top: 0.8rem;
+	left: 0.8rem;
+	border-right: 0;
+	border-bottom: 0;
+}
+
+.corner-tr {
+	top: 0.8rem;
+	right: 0.8rem;
+	border-left: 0;
+	border-bottom: 0;
+}
+
+.corner-bl {
+	bottom: 0.8rem;
+	left: 0.8rem;
+	border-top: 0;
+	border-right: 0;
+}
+
+.corner-br {
+	bottom: 0.8rem;
+	right: 0.8rem;
+	border-top: 0;
+	border-left: 0;
+}
+
+.close-btn {
+	margin-top: 0.8rem;
+	width: 100%;
+	padding: 0.8rem 0.95rem;
+	border: 1px solid rgba(148, 163, 184, 0.38);
+	border-radius: 0.8rem;
+	background: rgba(51, 65, 85, 0.92);
+	color: #f8fafc;
+	font-size: 0.92rem;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+@media (min-width: 560px) {
+	.mobile-access {
+		align-items: center;
+		padding-top: 1rem;
+		padding-bottom: 1rem;
+	}
+
+	.mobile-shell {
+		width: min(100%, 460px);
+	}
+
+	.hero-card,
+	.action-card {
+		padding: 1.2rem;
+	}
+}

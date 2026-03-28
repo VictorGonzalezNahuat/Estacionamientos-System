@@ -95,7 +95,17 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
     if (!placa) return;
 
     this.loading.set(true);
+    const yaDentro = this.estacionados().some(auto => (auto?.placa ?? '').toUpperCase() === placa);
 
+    if (yaDentro) {
+      this.solicitarSalida(placa, true);
+      return;
+    }
+
+    this.solicitarIngreso(placa, true);
+  }
+
+  private solicitarIngreso(placa: string, allowFallback: boolean) {
     this.http.post(
       `${this.config.apiUrl}/estacionamiento/ingresar`,
       { placa }
@@ -106,12 +116,17 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
         this.postOperacionExitosa();
       },
       error: () => {
-        this.intentarSalida(placa);
+        if (allowFallback) {
+          this.solicitarSalida(placa, false);
+          return;
+        }
+        this.alert.error('La placa no pudo ingresar ni salir', () => this.focusAndSelectPlaca());
+        this.loading.set(false);
       }
     });
   }
 
-  intentarSalida(placa: string) {
+  private solicitarSalida(placa: string, allowFallback: boolean) {
     this.http.post(
       `${this.config.apiUrl}/estacionamiento/salir`,
       { placa }
@@ -124,6 +139,10 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
       },
 
       error: () => {
+        if (allowFallback) {
+          this.solicitarIngreso(placa, false);
+          return;
+        }
         this.alert.error('La placa no pudo ingresar ni salir', () => this.focusAndSelectPlaca());
         this.loading.set(false);
       }
@@ -152,6 +171,7 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
   }
   iniciarAutoRefresh() {
     this.refreshInterval = setInterval(() => {
+      if (this.loading()) return;
       this.cargarEstacionados();
       this.cargarEstado();
     }, 10000);

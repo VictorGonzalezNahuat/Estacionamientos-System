@@ -6,6 +6,8 @@ import { provideRouter } from '@angular/router';
 import { authInterceptor } from './app/interceptors/auth-interceptor';
 import { APP_INITIALIZER } from '@angular/core';
 import { ConfigService } from './app/services/config.service';
+import { provideServiceWorker } from '@angular/service-worker';
+import { isDevMode } from '@angular/core';
 
 function initializeApp(configService: ConfigService) {
   return () => configService.loadConfig();
@@ -22,6 +24,10 @@ bootstrapApplication(App, {
       useFactory: initializeApp,
       deps: [ConfigService],
       multi: true
-    }
+    },
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000'
+    })
   ]
 });

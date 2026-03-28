@@ -4,6 +4,7 @@ import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { ConfigService } from '../../services/config.service';
+import { AlertService } from '../../core/services/alert';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
@@ -15,13 +16,13 @@ import { catchError } from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Login implements AfterViewInit {
-
   @ViewChild('usernameInput') private usernameInput?: ElementRef<HTMLInputElement>;
 
   private authService = inject(AuthService);
   private router = inject(Router);
   private http = inject(HttpClient);
   private config = inject(ConfigService);
+  private alert = inject(AlertService);
 
   username = '';
   password = '';
@@ -43,14 +44,29 @@ export class Login implements AfterViewInit {
       password: this.password
     }).subscribe({
       next: (response) => {
-        this.authService.saveToken(response.access_token);
-        this.anunciarBienvenida();
-        this.router.navigate(['/dashboard']);
+        void this.handleSuccessfulLogin(response.access_token);
       },
       error: () => {
         this.errorMessage = 'Credenciales incorrectas';
       }
     });
+  }
+
+  private async handleSuccessfulLogin(token: string): Promise<void> {
+    this.authService.saveToken(token);
+    this.anunciarBienvenida();
+
+    const targetRoute = this.isMobileDevice() ? '/acceso-movil' : '/dashboard';
+    await this.router.navigate([targetRoute]);
+  }
+
+  private isMobileDevice(): boolean {
+    const nav = navigator as Navigator & { userAgentData?: { mobile?: boolean } };
+    const byClientHint = nav.userAgentData?.mobile === true;
+    const byUserAgent = /android|iphone|ipod|windows phone|blackberry|opera mini|mobile/i.test(nav.userAgent);
+    const byViewport = window.matchMedia('(max-width: 768px)').matches && window.matchMedia('(pointer: coarse)').matches;
+
+    return byClientHint || byUserAgent || byViewport;
   }
 
   private anunciarBienvenida() {

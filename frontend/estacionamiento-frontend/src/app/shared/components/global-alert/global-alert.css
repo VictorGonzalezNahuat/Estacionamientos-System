@@ -422,3 +422,53 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+/* =========================
+   PENDING MESSAGES
+========================= */
+
+.custom-alert.pending-messages {
+  border-left: 6px solid #f97316;
+  min-width: 380px;
+  max-width: 520px;
+}
+
+.pending-messages-container {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pending-messages-caption {
+  margin: 0;
+  font-size: 14px;
+  color: #e2e8f0;
+}
+
+.pending-messages-list {
+  margin: 0;
+  padding-left: 20px;
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pending-message-item {
+  color: #f8fafc;
+  line-height: 1.4;
+}
+
+.btn-mark-read {
+  width: 100%;
+  margin-top: 8px;
+  background: #9a3412 !important;
+  border: 1px solid #fb923c !important;
+  color: #ffedd5 !important;
+}
+
+.btn-mark-read:hover {
+  background: #c2410c !important;
+}

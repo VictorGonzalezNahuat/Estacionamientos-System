@@ -4,6 +4,8 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "start:https": "ng serve --host 0.0.0.0 --port 4200 --ssl --ssl-cert certs/local-dev-cert.pem --ssl-key certs/local-dev-key.pem",
+    "https:setup": "bash scripts/setup-local-https.sh",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
@@ -29,6 +31,11 @@
     "@angular/forms": "^21.0.0",
     "@angular/platform-browser": "^21.0.0",
     "@angular/router": "^21.0.0",
+    "@angular/service-worker": "^21.1.4",
+    "@capacitor/core": "^8.3.0",
+    "@zxing/browser": "^0.1.5",
+    "@zxing/library": "^0.21.3",
+    "capacitor-native-biometric": "^4.2.2",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
