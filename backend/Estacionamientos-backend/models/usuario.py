@@ -1,4 +1,6 @@
-from sqlalchemy import DECIMAL, JSON, Column, Integer, String, Text
+from datetime import datetime
+
+from sqlalchemy import DECIMAL, DateTime, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database import Base
@@ -14,3 +16,4 @@ class Usuario(Base):
     comision: Mapped[float] = mapped_column(DECIMAL(5, 2), default=0.00)
     rol: Mapped[str | None] = mapped_column(Text)
     observaciones: Mapped[str | None] = mapped_column(String(100))
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=True)

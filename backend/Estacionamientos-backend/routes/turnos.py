@@ -25,6 +25,14 @@ def mi_turno(current_user: Usuario = Depends(get_current_user), db:Session = Dep
             "turno_id": turno.id,
             "hora_apertura": turno.hora_inicio}
 
+@router.get("/activos")
+def turnos_activos(current_user: Usuario = Depends(get_current_user), db:Session = Depends(get_db)):
+    turnos = db.query(Turno).filter(Turno.estado == "activo").all()
+
+    if not turnos:
+        raise HTTPException(status_code=404, detail="No hay turnos activos")
+    return turnos
+
 
 @router.post("/", response_model=TurnoResponse)
 def crear_turno(

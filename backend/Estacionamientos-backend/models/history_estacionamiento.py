@@ -1,5 +1,6 @@
-from datetime import date, time, datetime
-from sqlalchemy import Date, Float, Integer, Time, DateTime, String
+from datetime import date, datetime, time
+
+from sqlalchemy import Date, DateTime, Float, Integer, String, Time
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database import Base
@@ -18,7 +19,8 @@ class HistoryEstacionamiento(Base):
     hora_salida: Mapped[time] = mapped_column(Time())
     placa: Mapped[str] = mapped_column(String(100))
     importe: Mapped[float] = mapped_column(Float)
-    
-    
-    
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=True)
+
+
+
 

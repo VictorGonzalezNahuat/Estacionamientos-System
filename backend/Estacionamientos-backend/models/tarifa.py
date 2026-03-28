@@ -1,4 +1,6 @@
-from sqlalchemy import DECIMAL, JSON, Column, Integer, String, Text
+from datetime import datetime
+
+from sqlalchemy import DECIMAL, DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database import Base
@@ -16,4 +18,5 @@ class Tarifa(Base):
     diario: Mapped[float] = mapped_column(DECIMAL(10, 2), default=0.00)
     observaciones: Mapped[str | None] = mapped_column(String(255))
     eliminado: Mapped[int] = mapped_column(Integer, default=0)
-    default: Mapped[int] = mapped_column(Integer, default=0) 
+    default: Mapped[int] = mapped_column(Integer, default=0)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=True)

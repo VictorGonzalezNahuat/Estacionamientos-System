@@ -1,5 +1,6 @@
-from datetime import date, time, datetime
-from sqlalchemy import Date, Time, DateTime, String, Integer
+from datetime import date, datetime, time
+
+from sqlalchemy import Date, DateTime, String, Time
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database import Base
@@ -12,8 +13,9 @@ class Turno(Base):
     encargado_id: Mapped[int] = mapped_column(nullable=False)
     fecha: Mapped[date] = mapped_column(Date())
     hora_inicio: Mapped[time] = mapped_column(Time())
-    estado: Mapped[str] = mapped_column(String(100)) 
+    estado: Mapped[str] = mapped_column(String(100))
     hora_fin: Mapped[time] = mapped_column(Time())
-    fecha_fin: Mapped[date] = mapped_column(Date())  
-    
+    fecha_fin: Mapped[date] = mapped_column(Date())
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=True)
+
 

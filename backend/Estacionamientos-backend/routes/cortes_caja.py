@@ -18,7 +18,7 @@ def cortar_caja(current_user: Usuario = Depends(get_current_user), db: Session =
     turno = db.query(Turno).filter(Turno.encargado_id == Usuario.id, Turno.estado == "cerrado")
     if not turno:
         raise HTTPException(status_code=404, detail="No se encontró turno para el corte")
-
+    
 
     return {
         "estado": "cortado_prueba"

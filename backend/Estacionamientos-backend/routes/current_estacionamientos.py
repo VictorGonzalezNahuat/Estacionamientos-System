@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from core.security import get_current_user
@@ -9,6 +10,9 @@ from models.state_estacionamiento import StateEstacionamiento
 from models.tarifa import Tarifa
 from models.turno import Turno
 from models.usuario import Usuario
+from printer.print import generar_ticket_entrada_prueba
+from printer.print import generar_ticket_salida_prueba
+from printer.print import imprimir_ticket_red
 from schemas.current_estacionamiento import CurrentEstacionamientoCreate
 
 
@@ -48,7 +52,28 @@ def ingresar_auto(auto: CurrentEstacionamientoCreate, current_user: Usuario = De
     db.commit()
     db.refresh(nuevo_vehiculo)
 
-    return {"mensaje": "Vehiculo ingresado correctamente"}
+    entrada_dt = datetime.combine(nuevo_vehiculo.fecha_entrada, nuevo_vehiculo.hora_entrada)
+    placa_ticket = nuevo_vehiculo.placa.strip().upper()
+    ticket_bytes = generar_ticket_entrada_prueba(
+        folio=f"ENT-{placa_ticket}-{entrada_dt:%Y%m%d%H%M%S}",
+        placa=placa_ticket,
+        fecha_entrada=entrada_dt,
+        tarifa_nombre=getattr(tarifa, "nombre", "Tarifa General"),
+        cajero=getattr(current_user, "nombre", "SISTEMA")
+    )
+
+    tickets_dir = Path("printer") / "tickets"
+    tickets_dir.mkdir(parents=True, exist_ok=True)
+    ticket_path = tickets_dir / f"entrada_{placa_ticket}_{entrada_dt:%Y%m%d_%H%M%S}.bin"
+    ticket_path.write_bytes(ticket_bytes)
+    impreso_ok, impresion_mensaje = imprimir_ticket_red(ticket_bytes)
+
+    return {
+        "mensaje": "Vehiculo ingresado correctamente",
+        "ticket_bin": str(ticket_path),
+        "ticket_impreso": impreso_ok,
+        "impresion_mensaje": impresion_mensaje
+    }
 
 @router.post("/salir")
 def sacar_auto(
@@ -89,10 +114,13 @@ def sacar_auto(
     )
 
     tiempo_total = salida - entrada
-    total_minutos = int(tiempo_total.total_seconds() / 60)
+    total_segundos = tiempo_total.total_seconds()
 
-    if total_minutos <= 0:
+    if total_segundos < 0:
         raise HTTPException(status_code=400, detail="Tiempo inválido")
+
+    # Permite salida inmediata (< 1 minuto) cobrando al menos la primera hora.
+    total_minutos = max(1, int(total_segundos / 60))
 
     importe = 0
     minutos_restantes = total_minutos
@@ -161,11 +189,49 @@ def sacar_auto(
     db.delete(vehiculo)
     db.commit()
 
+    salida_dt = datetime.combine(fecha_salida, hora_salida)
+    ticket_bytes = generar_ticket_salida_prueba(
+        folio=f"SAL-{placa}-{salida_dt:%Y%m%d%H%M%S}",
+        placa=placa,
+        fecha_entrada=entrada,
+        fecha_salida=salida_dt,
+        minutos_estadia=total_minutos,
+        total_pagado=float(importe),
+        cajero=getattr(current_user, "nombre", "SISTEMA"),
+        etiqueta="ORIGINAL"
+    )
+    ticket_copia_bytes = generar_ticket_salida_prueba(
+        folio=f"SAL-{placa}-{salida_dt:%Y%m%d%H%M%S}",
+        placa=placa,
+        fecha_entrada=entrada,
+        fecha_salida=salida_dt,
+        minutos_estadia=total_minutos,
+        total_pagado=float(importe),
+        cajero=getattr(current_user, "nombre", "SISTEMA"),
+        etiqueta="COPIA"
+    )
+
+    tickets_dir = Path("printer") / "tickets"
+    tickets_dir.mkdir(parents=True, exist_ok=True)
+    ticket_path = tickets_dir / f"salida_{placa}_{salida_dt:%Y%m%d_%H%M%S}.bin"
+    ticket_path.write_bytes(ticket_bytes)
+    impreso_original_ok, impresion_original_mensaje = imprimir_ticket_red(ticket_bytes)
+    impreso_copia_ok, impresion_copia_mensaje = imprimir_ticket_red(ticket_copia_bytes)
+    impreso_ok = impreso_original_ok and impreso_copia_ok
+    impresion_mensaje = (
+        f"Original: {impresion_original_mensaje} | "
+        f"Copia: {impresion_copia_mensaje}"
+    )
+
     return {
         "mensaje": "Vehiculo retirado correctamente",
         "importe": importe,
         "fecha_salida": fecha_salida,
-        "hora_salida": hora_salida
+        "hora_salida": hora_salida,
+        "ticket_bin": str(ticket_path),
+        "ticket_copias": 2,
+        "ticket_impreso": impreso_ok,
+        "impresion_mensaje": impresion_mensaje
     }
 
 @router.get("/estacionados")

@@ -1,5 +1,6 @@
-from datetime import date, time, datetime
-from sqlalchemy import Date, Integer, Time, DateTime, String
+from datetime import date, datetime, time
+
+from sqlalchemy import Date, DateTime, Integer, String, Time
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database import Base
@@ -15,4 +16,5 @@ class CurrentEstacionamiento(Base):
     turno_id: Mapped[int] = mapped_column(Integer)
     fecha_entrada: Mapped[date] = mapped_column(Date())
     hora_entrada: Mapped[time] = mapped_column(Time())
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=True)
 

@@ -1,10 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from core.sync_scheduler import start_sync_scheduler, stop_sync_scheduler
 from database import engine
 
 # Routers
-from routes import auth, cortes_caja, current_estacionamientos, history_estacionamientos, state_estacionamientos, tarifas, turnos, usuarios
+from routes import auth, configuracion, cortes_caja, current_estacionamientos, history_estacionamientos, mensajes, state_estacionamientos, sync, tarifas, turnos, usuarios
 
 # from app.routes import usuarios, tarifas, turnos
 
@@ -13,6 +14,16 @@ app = FastAPI(
     description="API para gestión de estacionamiento",
     version="0.1.0",
 )
+
+
+@app.on_event("startup")
+async def on_startup() -> None:
+    start_sync_scheduler()
+
+
+@app.on_event("shutdown")
+async def on_shutdown() -> None:
+    await stop_sync_scheduler()
 
 # CORS (luego Angular lo va a agradecer)
 app.add_middleware(
@@ -43,3 +54,6 @@ app.include_router(current_estacionamientos.router, prefix="/estacionamiento", t
 app.include_router(state_estacionamientos.router, prefix="/estacion", tags=["Estado_estacionamiento"])
 app.include_router(cortes_caja.router, prefix="/corte-caja", tags=["Corte_de_cajas"])
 app.include_router(history_estacionamientos.router, prefix="/history", tags=["Historial"])
+app.include_router(mensajes.router, prefix="/mensajes", tags=["Mensajes"])
+app.include_router(sync.router, prefix="/sync", tags=["Sync"])
+app.include_router(configuracion.router, prefix="/config", tags=["Configuracion"])

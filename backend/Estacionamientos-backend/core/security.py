@@ -101,3 +101,8 @@ def get_current_admin(
         )
 
     return usuario
+
+
+def get_user_admin(current_admin: Usuario = Depends(get_current_admin)):
+    """Alias para proteger endpoints solo admin."""
+    return current_admin
