@@ -4,7 +4,25 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ConfigService } from '../../../services/config.service';
 import { AlertService } from '../../../core/services/alert';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+
+type MetodoPago = 'efectivo' | 'tarjeta';
+
+interface SalidaTarjetaResponse {
+  checkout_url?: string;
+  preferencia_id?: string;
+}
+
+interface EstadoPagoResponse {
+  estado_transaccion?: string;
+  pagado?: boolean;
+}
+
+interface PagoPendienteStorage {
+  preferenciaId: string;
+  placa: string;
+  createdAt: number;
+}
 
 @Component({
   selector: 'app-entradas-salidas',
@@ -16,13 +34,21 @@ import { Router } from '@angular/router';
 })
 export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
 
+  private static readonly PAGO_PENDIENTE_KEY = 'pago_tarjeta_pendiente';
+  private static readonly POLLING_INTERVAL_MS = 4000;
+  private static readonly POLLING_TIMEOUT_MS = 120000;
+  private static readonly PAGO_PENDIENTE_TTL_MS = 15 * 60 * 1000;
+
   private http = inject(HttpClient);
   private fb = inject(FormBuilder);
   private config = inject(ConfigService);
   private alert = inject(AlertService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private relojInterval: any;
   private refreshInterval: any;
+  private pagoPollingInterval: any;
+  private pagoPollingTimeout: any;
 
 
   @ViewChild('placaInput') placaInput!: ElementRef<HTMLInputElement>;
@@ -34,6 +60,9 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
   now = signal(new Date());
   estacionados = signal<any[]>([]);
   estado = signal<any>(null);
+  preferenciaIdPendiente = signal<string | null>(null);
+  placaPendientePago = signal<string | null>(null);
+  pollingEnCurso = signal(false);
 
 
 
@@ -50,6 +79,7 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnInit() {
+    this.restaurarPagoPendiente();
     this.cargarDatos();
     this.cargarEstacionados();
     this.cargarEstado();
@@ -87,8 +117,12 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
   }
 
 
-  ingresarVehiculo() {
+  async ingresarVehiculo() {
     if (this.form.invalid) return;
+    if (this.pollingEnCurso()) {
+      this.alert.error('Ya hay un pago con tarjeta en proceso de confirmacion');
+      return;
+    }
 
     const placa = this.form.value.placa?.toUpperCase().trim();
 
@@ -98,11 +132,36 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
     const yaDentro = this.estacionados().some(auto => (auto?.placa ?? '').toUpperCase() === placa);
 
     if (yaDentro) {
-      this.solicitarSalida(placa, true);
+      await this.solicitarSalidaSegunMetodo(placa, true);
       return;
     }
 
     this.solicitarIngreso(placa, true);
+  }
+
+  getSubmitLabel(): string {
+    if (this.pollingEnCurso()) {
+      return 'Consultando pago...';
+    }
+    return this.loading() ? 'Procesando...' : 'Ingresar / Salir';
+  }
+
+  private reintentarConsultaPago() {
+    const preferenciaId = this.preferenciaIdPendiente();
+    if (preferenciaId) {
+      this.iniciarPollingPago(preferenciaId);
+      return;
+    }
+
+    const placaFormulario = this.form.value.placa?.toUpperCase().trim();
+    const placa = placaFormulario || this.placaPendientePago();
+
+    if (!placa) {
+      this.alert.error('No hay referencia de pago. Ingresa la placa para buscar un pendiente.');
+      return;
+    }
+
+    this.buscarPagoPendientePorPlaca(placa);
   }
 
   private solicitarIngreso(placa: string, allowFallback: boolean) {
@@ -117,13 +176,39 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
       },
       error: () => {
         if (allowFallback) {
-          this.solicitarSalida(placa, false);
+          void this.solicitarSalidaSegunMetodo(placa, false);
           return;
         }
         this.alert.error('La placa no pudo ingresar ni salir', () => this.focusAndSelectPlaca());
         this.loading.set(false);
       }
     });
+  }
+
+  private async solicitarSalidaSegunMetodo(placa: string, allowFallback: boolean) {
+    const metodo = await this.seleccionarMetodoPagoSalida();
+    if (!metodo) {
+      this.loading.set(false);
+      this.focusAndSelectPlaca();
+      return;
+    }
+
+    if (metodo === 'tarjeta') {
+      this.solicitarSalidaTarjeta(placa, allowFallback);
+      return;
+    }
+
+    this.solicitarSalida(placa, allowFallback);
+  }
+
+  private seleccionarMetodoPagoSalida(): Promise<MetodoPago | null> {
+    return this.alert.selectPaymentMethod(
+      'Selecciona como deseas cobrar la salida del vehiculo.',
+      'Metodo de pago',
+      'Efectivo',
+      'Tarjeta (Stripe)',
+      'Cancelar'
+    );
   }
 
   private solicitarSalida(placa: string, allowFallback: boolean) {
@@ -144,6 +229,38 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
           return;
         }
         this.alert.error('La placa no pudo ingresar ni salir', () => this.focusAndSelectPlaca());
+        this.loading.set(false);
+      }
+    });
+  }
+
+  private solicitarSalidaTarjeta(placa: string, allowFallback: boolean) {
+    this.http.post<SalidaTarjetaResponse>(
+      `${this.config.apiUrl}/pagos/salir_tarjeta`,
+      { placa }
+    ).subscribe({
+      next: (res) => {
+        const checkoutUrl = res?.checkout_url;
+        const preferenciaId = res?.preferencia_id;
+
+        if (!checkoutUrl || !preferenciaId) {
+          this.alert.error('No fue posible iniciar el pago con tarjeta.');
+          this.loading.set(false);
+          return;
+        }
+
+        this.guardarPagoPendiente(preferenciaId, placa);
+        this.loading.set(false);
+
+        window.location.href = checkoutUrl;
+      },
+      error: () => {
+        if (allowFallback) {
+          this.solicitarIngreso(placa, false);
+          return;
+        }
+
+        this.alert.error('No se pudo iniciar el pago con tarjeta', () => this.focusAndSelectPlaca());
         this.loading.set(false);
       }
     });
@@ -179,6 +296,196 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
   ngOnDestroy() {
     clearInterval(this.relojInterval);
     clearInterval(this.refreshInterval);
+    this.detenerPollingPago();
+  }
+
+  private restaurarPagoPendiente() {
+    const preferenciaEnQuery = this.route.snapshot.queryParamMap.get('preferencia_id');
+    const placaEnQuery = this.route.snapshot.queryParamMap.get('placa');
+
+    if (preferenciaEnQuery) {
+      const placa = placaEnQuery?.toUpperCase().trim() || this.placaPendientePago() || '';
+      this.guardarPagoPendiente(preferenciaEnQuery, placa);
+      this.iniciarPollingPago(preferenciaEnQuery);
+      return;
+    }
+
+    const pendiente = this.leerPagoPendiente();
+    if (!pendiente) return;
+
+    this.preferenciaIdPendiente.set(pendiente.preferenciaId);
+    this.placaPendientePago.set(pendiente.placa);
+    this.iniciarPollingPago(pendiente.preferenciaId);
+  }
+
+  private iniciarPollingPago(preferenciaId: string) {
+    this.detenerPollingPago();
+
+    this.preferenciaIdPendiente.set(preferenciaId);
+    this.pollingEnCurso.set(true);
+
+    this.consultarEstadoPago(preferenciaId);
+
+    this.pagoPollingInterval = setInterval(() => {
+      this.consultarEstadoPago(preferenciaId);
+    }, EntradasSalidas.POLLING_INTERVAL_MS);
+
+    this.pagoPollingTimeout = setTimeout(() => {
+      this.detenerPollingPago();
+      this.loading.set(false);
+      void this.ofrecerReintentoConsulta(
+        'No se pudo confirmar el pago en el tiempo esperado. ¿Deseas reintentar la consulta?'
+      );
+    }, EntradasSalidas.POLLING_TIMEOUT_MS);
+  }
+
+  private consultarEstadoPago(preferenciaId: string) {
+    this.http.get<EstadoPagoResponse>(
+      `${this.config.apiUrl}/pagos/estado/${encodeURIComponent(preferenciaId)}`
+    ).subscribe({
+      next: (estado) => this.procesarEstadoPago(estado),
+      error: () => {
+        this.detenerPollingPago();
+        this.loading.set(false);
+        void this.ofrecerReintentoConsulta(
+          'No se pudo consultar el estado del pago por un problema de red. ¿Deseas reintentar?'
+        );
+      }
+    });
+  }
+
+  private procesarEstadoPago(estado: EstadoPagoResponse) {
+    const estadoTransaccion = (estado?.estado_transaccion ?? '').toLowerCase();
+    const pagado = estado?.pagado === true;
+
+    if (estadoTransaccion === 'completado' && pagado) {
+      this.detenerPollingPago();
+      this.limpiarPagoPendiente();
+      this.alert.success('Pago con tarjeta confirmado. Vehiculo retirado correctamente.', () => this.focusAndSelectPlaca());
+      this.speak('Pago con tarjeta confirmado. Vehiculo retirado correctamente');
+      this.postOperacionExitosa();
+      return;
+    }
+
+    if (estadoTransaccion === 'rechazado' || estadoTransaccion === 'cancelado') {
+      this.detenerPollingPago();
+      this.limpiarPagoPendiente();
+      this.loading.set(false);
+      this.alert.error(`El pago fue ${estadoTransaccion}.`);
+      return;
+    }
+  }
+
+  private buscarPagoPendientePorPlaca(placa: string) {
+    this.loading.set(true);
+    this.http.get<any>(
+      `${this.config.apiUrl}/pagos/placa/${encodeURIComponent(placa)}/pendiente`
+    ).subscribe({
+      next: (res) => {
+        const preferenciaId = this.extraerPreferenciaId(res);
+        this.loading.set(false);
+
+        if (!preferenciaId) {
+          this.alert.error(`No existe pago pendiente para la placa ${placa}.`);
+          return;
+        }
+
+        this.guardarPagoPendiente(preferenciaId, placa);
+        this.iniciarPollingPago(preferenciaId);
+      },
+      error: () => {
+        this.loading.set(false);
+        this.alert.error('No fue posible buscar pagos pendientes por placa.');
+      }
+    });
+  }
+
+  private async ofrecerReintentoConsulta(mensaje: string) {
+    const reintentar = await this.alert.confirm(
+      mensaje,
+      'Pago con tarjeta',
+      'Reintentar',
+      'Cerrar'
+    );
+
+    if (reintentar) {
+      this.reintentarConsultaPago();
+    }
+  }
+
+  private extraerPreferenciaId(payload: any): string | null {
+    if (!payload || typeof payload !== 'object') return null;
+
+    if (typeof payload.preferencia_id === 'string' && payload.preferencia_id.trim()) {
+      return payload.preferencia_id;
+    }
+
+    if (payload.data && typeof payload.data.preferencia_id === 'string' && payload.data.preferencia_id.trim()) {
+      return payload.data.preferencia_id;
+    }
+
+    return null;
+  }
+
+  private guardarPagoPendiente(preferenciaId: string, placa: string) {
+    this.preferenciaIdPendiente.set(preferenciaId);
+    this.placaPendientePago.set(placa);
+
+    const data: PagoPendienteStorage = {
+      preferenciaId,
+      placa,
+      createdAt: Date.now(),
+    };
+
+    localStorage.setItem(EntradasSalidas.PAGO_PENDIENTE_KEY, JSON.stringify(data));
+  }
+
+  private leerPagoPendiente(): PagoPendienteStorage | null {
+    const raw = localStorage.getItem(EntradasSalidas.PAGO_PENDIENTE_KEY);
+    if (!raw) return null;
+
+    try {
+      const parsed = JSON.parse(raw) as Partial<PagoPendienteStorage>;
+      if (!parsed.preferenciaId || !parsed.createdAt || !parsed.placa) {
+        this.limpiarPagoPendiente();
+        return null;
+      }
+
+      const vencido = Date.now() - parsed.createdAt > EntradasSalidas.PAGO_PENDIENTE_TTL_MS;
+      if (vencido) {
+        this.limpiarPagoPendiente();
+        return null;
+      }
+
+      return {
+        preferenciaId: parsed.preferenciaId,
+        placa: parsed.placa,
+        createdAt: parsed.createdAt,
+      };
+    } catch {
+      this.limpiarPagoPendiente();
+      return null;
+    }
+  }
+
+  private limpiarPagoPendiente() {
+    localStorage.removeItem(EntradasSalidas.PAGO_PENDIENTE_KEY);
+    this.preferenciaIdPendiente.set(null);
+    this.placaPendientePago.set(null);
+  }
+
+  private detenerPollingPago() {
+    if (this.pagoPollingInterval) {
+      clearInterval(this.pagoPollingInterval);
+      this.pagoPollingInterval = null;
+    }
+
+    if (this.pagoPollingTimeout) {
+      clearTimeout(this.pagoPollingTimeout);
+      this.pagoPollingTimeout = null;
+    }
+
+    this.pollingEnCurso.set(false);
   }
 
   private focusAndSelectPlaca() {

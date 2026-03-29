@@ -10,17 +10,18 @@
        [class.password-input]="alert.type === 'password-input'"
        [class.reset-password-step1]="alert.type === 'reset-password-step1'"
       [class.reset-password-step2]="alert.type === 'reset-password-step2'"
-      [class.pending-messages]="alert.type === 'pending-messages'">
+      [class.pending-messages]="alert.type === 'pending-messages'"
+      [class.payment-method-select]="alert.type === 'payment-method-select'">
 
     <!-- ICONO -->
     @if (alert.type !== 'info') {
     <div class="alert-icon">
-      {{ alert.type === 'success' ? '✔' : alert.type === 'confirm' ? '❓' : alert.type === 'session-restart' ? '🔄' : alert.type === 'password-input' ? '🔐' : alert.type === 'reset-password-step1' || alert.type === 'reset-password-step2' ? '🔑' : alert.type === 'pending-messages' ? '🔔' : '⚠' }}
+      {{ alert.type === 'success' ? '✔' : alert.type === 'confirm' ? '❓' : alert.type === 'session-restart' ? '🔄' : alert.type === 'password-input' ? '🔐' : alert.type === 'reset-password-step1' || alert.type === 'reset-password-step2' ? '🔑' : alert.type === 'pending-messages' ? '🔔' : alert.type === 'payment-method-select' ? '💳' : '⚠' }}
     </div>
     }
 
     <!-- TÍTULO PARA CONFIRM / SESSION-RESTART / PASSWORD-INPUT -->
-    @if ((alert.type === 'confirm' || alert.type === 'session-restart' || alert.type === 'password-input' || alert.type === 'reset-password-step1' || alert.type === 'reset-password-step2' || alert.type === 'pending-messages') && alert.title) {
+    @if ((alert.type === 'confirm' || alert.type === 'session-restart' || alert.type === 'password-input' || alert.type === 'reset-password-step1' || alert.type === 'reset-password-step2' || alert.type === 'pending-messages' || alert.type === 'payment-method-select') && alert.title) {
     <div class="alert-title">
       {{ alert.title }}
     </div>
@@ -182,6 +183,24 @@
     </div>
     }
 
+    <!-- BOTONES METODO DE PAGO -->
+    @if (alert.type === 'payment-method-select') {
+    <div class="alert-buttons alert-buttons-vertical">
+      <button class="alert-button btn-payment-cash"
+              (click)="alertService.handlePaymentMethodSelection('efectivo')">
+        {{ alert.confirmText || 'Efectivo' }}
+      </button>
+      <button class="alert-button btn-payment-card"
+              (click)="alertService.handlePaymentMethodSelection('tarjeta')">
+        {{ alert.secondaryText || 'Tarjeta (Stripe)' }}
+      </button>
+      <button class="alert-button btn-cancel"
+              (click)="alertService.handlePaymentMethodSelection(null)">
+        {{ alert.cancelText || 'Cancelar' }}
+      </button>
+    </div>
+    }
+
     <!-- BOTONES RESET STEP 1 -->
     @if (alert.type === 'reset-password-step1') {
     <div class="alert-buttons">
@@ -227,7 +246,7 @@
         }
 
     <!-- BOTÓN GLOBAL (para SUCCESS / ERROR / INFO) -->
-        @if (alert.type !== 'confirm' && alert.type !== 'session-restart' && alert.type !== 'password-input' && alert.type !== 'reset-password-step1' && alert.type !== 'reset-password-step2' && alert.type !== 'pending-messages') {
+        @if (alert.type !== 'confirm' && alert.type !== 'session-restart' && alert.type !== 'password-input' && alert.type !== 'reset-password-step1' && alert.type !== 'reset-password-step2' && alert.type !== 'pending-messages' && alert.type !== 'payment-method-select') {
     <button class="alert-button"
             (click)="alertService.close()">
       Aceptar

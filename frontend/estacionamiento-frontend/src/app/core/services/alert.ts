@@ -2,7 +2,7 @@ import { Injectable, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
 
 export interface AlertMessage {
-  type: 'success' | 'error' | 'info' | 'confirm' | 'session-restart' | 'password-input' | 'reset-password-step1' | 'reset-password-step2' | 'pending-messages';
+  type: 'success' | 'error' | 'info' | 'confirm' | 'session-restart' | 'password-input' | 'reset-password-step1' | 'reset-password-step2' | 'pending-messages' | 'payment-method-select';
   message?: string;
 
   // NUEVO
@@ -14,6 +14,7 @@ export interface AlertMessage {
   onClose?: () => void;
   confirmText?: string;
   cancelText?: string;
+  secondaryText?: string;
   inputValue?: string;
   inputValue2?: string;
 }
@@ -28,6 +29,7 @@ export class AlertService {
 
   alertState = signal<AlertMessage | null>(null);
   private confirmResolve: ((value: boolean) => void) | null = null;
+  private paymentMethodResolve: ((value: 'efectivo' | 'tarjeta' | null) => void) | null = null;
   private passwordResolve: ((value: string | null) => void) | null = null;
   private resetPasswordResolve: ((value: { nueva: string; admin: string } | null) => void) | null = null;
   private _resetNuevaPassword = '';
@@ -79,6 +81,27 @@ export class AlertService {
         persistent: true,
         onConfirm: () => this.handleConfirm(true),
         onCancel: () => this.handleConfirm(false),
+      });
+    });
+  }
+
+  selectPaymentMethod(
+    message: string = 'Selecciona como deseas cobrar la salida del vehiculo.',
+    title: string = 'Metodo de pago',
+    efectivoText: string = 'Efectivo',
+    tarjetaText: string = 'Tarjeta (Stripe)',
+    cancelText: string = 'Cancelar'
+  ): Promise<'efectivo' | 'tarjeta' | null> {
+    return new Promise((resolve) => {
+      this.paymentMethodResolve = resolve;
+      this.show({
+        type: 'payment-method-select',
+        message,
+        title,
+        confirmText: efectivoText,
+        secondaryText: tarjetaText,
+        cancelText,
+        persistent: true,
       });
     });
   }
@@ -180,6 +203,14 @@ export class AlertService {
     if (this.confirmResolve) {
       this.confirmResolve(confirmed);
       this.confirmResolve = null;
+    }
+    this.close();
+  }
+
+  handlePaymentMethodSelection(value: 'efectivo' | 'tarjeta' | null) {
+    if (this.paymentMethodResolve) {
+      this.paymentMethodResolve(value);
+      this.paymentMethodResolve = null;
     }
     this.close();
   }

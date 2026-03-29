@@ -73,8 +73,8 @@
                     class="placa-input"
                 />
 
-                <button type="submit" class="submit-btn" [disabled]="form.invalid || loading()">
-                    {{ loading() ? 'Ingresando...' : 'Ingresar Vehículo' }}
+                <button type="submit" class="submit-btn" [disabled]="form.invalid || loading() || pollingEnCurso()">
+                    {{ getSubmitLabel() }}
                 </button>
 
                 </form>
