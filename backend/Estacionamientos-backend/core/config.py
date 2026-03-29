@@ -131,6 +131,12 @@ ENTRY_TICKET_CODE_TYPE = str(
 if ENTRY_TICKET_CODE_TYPE not in {"BARCODE", "QR"}:
     ENTRY_TICKET_CODE_TYPE = "BARCODE"
 
+PUBLIC_STATUS_BASE_URL = str(
+    APP_CONFIG.get("PUBLIC_STATUS_BASE_URL", os.getenv("PUBLIC_STATUS_BASE_URL", "http://localhost:8100"))
+).strip()
+if not PUBLIC_STATUS_BASE_URL:
+    PUBLIC_STATUS_BASE_URL = "http://localhost:8100"
+
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL no esta configurada en variables de entorno")
 
@@ -152,11 +158,12 @@ def get_public_config_values() -> dict:
         "SYNC_INTERVAL_MINUTES": SYNC_INTERVAL_MINUTES,
         "MOBILE_PRINT": MOBILE_PRINT,
         "ENTRY_TICKET_CODE_TYPE": ENTRY_TICKET_CODE_TYPE,
+        "PUBLIC_STATUS_BASE_URL": PUBLIC_STATUS_BASE_URL,
     }
 
 
 def update_public_config_values(updates: dict) -> dict:
-    global DATABASE_CLOUD_URL, SYNC_AUTO_ENABLED, SYNC_INTERVAL_MINUTES, MOBILE_PRINT, ENTRY_TICKET_CODE_TYPE, APP_CONFIG
+    global DATABASE_CLOUD_URL, SYNC_AUTO_ENABLED, SYNC_INTERVAL_MINUTES, MOBILE_PRINT, ENTRY_TICKET_CODE_TYPE, PUBLIC_STATUS_BASE_URL, APP_CONFIG
 
     if not isinstance(updates, dict):
         raise ValueError("Payload de configuracion invalido")
@@ -190,6 +197,9 @@ def update_public_config_values(updates: dict) -> dict:
     auto_enabled = _to_bool(updates.get("SYNC_AUTO_ENABLED", SYNC_AUTO_ENABLED))
     mobile_print = _to_bool(updates.get("MOBILE_PRINT", MOBILE_PRINT))
     code_type = _sanitize_entry_ticket_code_type(updates.get("ENTRY_TICKET_CODE_TYPE", ENTRY_TICKET_CODE_TYPE))
+    status_url = str(updates.get("PUBLIC_STATUS_BASE_URL", PUBLIC_STATUS_BASE_URL)).strip()
+    if not status_url:
+        raise ValueError("PUBLIC_STATUS_BASE_URL no puede estar vacia")
 
     normalized_cloud_url = _normalize_mysql_url(cloud_url)
 
@@ -199,6 +209,7 @@ def update_public_config_values(updates: dict) -> dict:
         "SYNC_INTERVAL_MINUTES": interval,
         "MOBILE_PRINT": mobile_print,
         "ENTRY_TICKET_CODE_TYPE": code_type,
+        "PUBLIC_STATUS_BASE_URL": status_url,
     }
     _save_json_config(CONFIG_PATH, new_data)
 
@@ -208,5 +219,6 @@ def update_public_config_values(updates: dict) -> dict:
     SYNC_INTERVAL_MINUTES = interval
     MOBILE_PRINT = mobile_print
     ENTRY_TICKET_CODE_TYPE = code_type
+    PUBLIC_STATUS_BASE_URL = status_url
 
     return get_public_config_values()

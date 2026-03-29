@@ -10,6 +10,7 @@ class ConfiguracionResponse(BaseModel):
     SYNC_INTERVAL_MINUTES: int
     MOBILE_PRINT: bool
     ENTRY_TICKET_CODE_TYPE: str
+    PUBLIC_STATUS_BASE_URL: str
 
 
 class ConfiguracionUpdate(BaseModel):
@@ -22,12 +23,14 @@ class ConfiguracionUpdate(BaseModel):
     SYNC_INTERVAL_MINUTES: int = Field(ge=1)
     MOBILE_PRINT: bool
     ENTRY_TICKET_CODE_TYPE: str
+    PUBLIC_STATUS_BASE_URL: str = Field(min_length=1)
 
     @field_validator(
         "DATABASE_CLOUD_USER",
         "DATABASE_CLOUD_PASSWORD",
         "DATABASE_CLOUD_HOST",
         "DATABASE_CLOUD_NAME",
+        "PUBLIC_STATUS_BASE_URL",
     )
     @classmethod
     def validate_non_empty_text(cls, value):

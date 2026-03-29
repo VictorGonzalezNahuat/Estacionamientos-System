@@ -19,6 +19,58 @@ from schemas.current_estacionamiento import CurrentEstacionamientoCreate
 router = APIRouter()
 
 
+def _calcular_importe_por_minutos(total_minutos: int, tarifa: Tarifa):
+    importe = 0
+    minutos_restantes = total_minutos
+
+    MINUTOS_DIA = 1440
+    MINUTOS_MEDIO_DIA = 720
+    MINUTOS_HORA = 60
+    MINUTOS_FRACCION = 30
+
+    dias = minutos_restantes // MINUTOS_DIA
+    if dias > 0:
+        importe += dias * tarifa.diario
+        minutos_restantes = minutos_restantes % MINUTOS_DIA
+
+    medios_dias = minutos_restantes // MINUTOS_MEDIO_DIA
+    if medios_dias > 0:
+        importe += medios_dias * tarifa.medio_dia
+        minutos_restantes = minutos_restantes % MINUTOS_MEDIO_DIA
+
+    if minutos_restantes > 0:
+        if minutos_restantes <= MINUTOS_HORA:
+            importe += tarifa.hora
+            minutos_restantes = 0
+        else:
+            importe += tarifa.hora
+            minutos_restantes -= MINUTOS_HORA
+
+            horas_completas = minutos_restantes // MINUTOS_HORA
+            importe += horas_completas * tarifa.hora
+            minutos_restantes = minutos_restantes % MINUTOS_HORA
+
+            if minutos_restantes == 0:
+                pass
+            elif minutos_restantes <= MINUTOS_FRACCION:
+                importe += tarifa.fraccion
+            else:
+                importe += tarifa.hora
+
+    return importe
+
+
+def _calcular_minutos_estadia(fecha_entrada, hora_entrada, referencia_dt: datetime) -> int:
+    entrada = datetime.combine(fecha_entrada, hora_entrada)
+    tiempo_total = referencia_dt - entrada
+    total_segundos = tiempo_total.total_seconds()
+
+    if total_segundos < 0:
+        raise ValueError("Tiempo invalido")
+
+    return max(1, int(total_segundos / 60))
+
+
 @router.post("/ingresar")
 def ingresar_auto(auto: CurrentEstacionamientoCreate, current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
     
@@ -103,71 +155,29 @@ def sacar_auto(
     if not tarifa:
         raise HTTPException(status_code=404, detail="Tarifa no encontrada")
 
-    # Momento de salida
-    salida = datetime.now()
-    fecha_salida = salida.date()
-    hora_salida = salida.time()
+    # Momento real de salida (se usa el mismo valor en todo el flujo)
+    salida_dt = datetime.now()
+    fecha_salida = salida_dt.date()
+    hora_salida = salida_dt.time()
 
-    entrada = datetime.combine(
-        vehiculo.fecha_entrada,
-        vehiculo.hora_entrada
-    )
+    entrada = datetime.combine(vehiculo.fecha_entrada, vehiculo.hora_entrada)
 
-    tiempo_total = salida - entrada
-    total_segundos = tiempo_total.total_seconds()
-
-    if total_segundos < 0:
+    try:
+        total_minutos = _calcular_minutos_estadia(
+            vehiculo.fecha_entrada,
+            vehiculo.hora_entrada,
+            salida_dt
+        )
+    except ValueError:
         raise HTTPException(status_code=400, detail="Tiempo inválido")
 
-    # Permite salida inmediata (< 1 minuto) cobrando al menos la primera hora.
-    total_minutos = max(1, int(total_segundos / 60))
-
-    importe = 0
-    minutos_restantes = total_minutos
-
-    MINUTOS_DIA = 1440
-    MINUTOS_MEDIO_DIA = 720
-    MINUTOS_HORA = 60
-    MINUTOS_FRACCION = 30
-
-    # 🔹 1️⃣ DÍAS COMPLETOS
-    dias = minutos_restantes // MINUTOS_DIA
-    if dias > 0:
-        importe += dias * tarifa.diario
-        minutos_restantes = minutos_restantes % MINUTOS_DIA
-
-    # 🔹 2️⃣ MEDIOS DÍAS
-    medios_dias = minutos_restantes // MINUTOS_MEDIO_DIA
-    if medios_dias > 0:
-        importe += medios_dias * tarifa.medio_dia
-        minutos_restantes = minutos_restantes % MINUTOS_MEDIO_DIA
-
-    # 🔹 3️⃣ HORAS Y FRACCIONES
-    if minutos_restantes > 0:
-
-        # Primera hora obligatoria
-        if minutos_restantes <= MINUTOS_HORA:
-            importe += tarifa.hora
-            minutos_restantes = 0
-        else:
-            importe += tarifa.hora
-            minutos_restantes -= MINUTOS_HORA
-
-            # Horas completas después de la primera
-            horas_completas = minutos_restantes // MINUTOS_HORA
-            importe += horas_completas * tarifa.hora
-            minutos_restantes = minutos_restantes % MINUTOS_HORA
-
-            # Fracción final
-            if minutos_restantes == 0:
-                pass
-            elif minutos_restantes <= MINUTOS_FRACCION:
-                importe += tarifa.fraccion
-            else:
-                importe += tarifa.hora
+    importe = _calcular_importe_por_minutos(total_minutos, tarifa)
     
     #Como es salida se guarda el turno actual del usuario actual
     turno_usuario = db.query(Turno).filter(Turno.encargado_id == current_user.id, Turno.estado == "activo").first()
+
+    if not turno_usuario:
+        raise HTTPException(status_code=404, detail="No existe turno abierto para el usuario actual")
 
 
     # 🔹 Crear registro en historial
@@ -189,7 +199,6 @@ def sacar_auto(
     db.delete(vehiculo)
     db.commit()
 
-    salida_dt = datetime.combine(fecha_salida, hora_salida)
     ticket_bytes = generar_ticket_salida_prueba(
         folio=f"SAL-{placa}-{salida_dt:%Y%m%d%H%M%S}",
         placa=placa,
@@ -237,4 +246,43 @@ def sacar_auto(
 @router.get("/estacionados")
 def obtener_estacionados(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
     estacionados = db.query(CurrentEstacionamiento).all()
-    return estacionados
+    if not estacionados:
+        return []
+
+    tarifa_ids = {vehiculo.tarifa_id for vehiculo in estacionados}
+    tarifas = db.query(Tarifa).filter(Tarifa.id.in_(tarifa_ids)).all()
+    tarifas_por_id = {tarifa.id: tarifa for tarifa in tarifas}
+    referencia_dt = datetime.now()
+
+    resultado = []
+    for vehiculo in estacionados:
+        tarifa = tarifas_por_id.get(vehiculo.tarifa_id)
+        minutos_estadia = None
+        monto_estimado = None
+
+        if tarifa:
+            try:
+                minutos_estadia = _calcular_minutos_estadia(
+                    vehiculo.fecha_entrada,
+                    vehiculo.hora_entrada,
+                    referencia_dt
+                )
+                monto_estimado = _calcular_importe_por_minutos(minutos_estadia, tarifa)
+            except ValueError:
+                minutos_estadia = None
+                monto_estimado = None
+
+        resultado.append({
+            "id": vehiculo.id,
+            "encargado_id": vehiculo.encargado_id,
+            "placa": vehiculo.placa,
+            "tarifa_id": vehiculo.tarifa_id,
+            "turno_id": vehiculo.turno_id,
+            "fecha_entrada": vehiculo.fecha_entrada,
+            "hora_entrada": vehiculo.hora_entrada,
+            "updated_at": vehiculo.updated_at,
+            "minutos_estadia": minutos_estadia,
+            "monto_estimado": monto_estimado
+        })
+
+    return resultado

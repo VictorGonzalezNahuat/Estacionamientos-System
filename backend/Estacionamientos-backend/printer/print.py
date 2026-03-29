@@ -69,7 +69,8 @@ def _qr_placa(placa: str) -> bytes:
 def _url_estado_publico(placa: str) -> str:
 	placa_limpia = (placa or "").strip() or "SINPLACA"
 	placa_encoded = quote(placa_limpia, safe="")
-	return f"http://192.168.1.94:8100/public/estado/{placa_encoded}/view"
+	base_url = app_config.PUBLIC_STATUS_BASE_URL.rstrip("/")
+	return f"{base_url}/public/estado/{placa_encoded}/view"
 
 
 def _modo_codigo_entrada() -> str:

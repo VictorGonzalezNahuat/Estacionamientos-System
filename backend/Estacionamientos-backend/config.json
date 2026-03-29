@@ -3,5 +3,6 @@
   "SYNC_AUTO_ENABLED": true,
   "SYNC_INTERVAL_MINUTES": 1,
   "MOBILE_PRINT": false,
-  "ENTRY_TICKET_CODE_TYPE": "BARCODE"
+  "ENTRY_TICKET_CODE_TYPE": "BARCODE",
+  "PUBLIC_STATUS_BASE_URL": "https://estacionamientos-complementomovil-production.up.railway.app"
 }

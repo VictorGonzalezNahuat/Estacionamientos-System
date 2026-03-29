@@ -19,13 +19,19 @@ def historial_hoy(current_user: Usuario = Depends(get_current_user), db: Session
 
     hoy = date.today()
     historiales = db.query(HistoryEstacionamiento).filter(HistoryEstacionamiento.fecha_salida == hoy).all()
+    
+    # Verificar si hay turnos sin cerrar para la advertencia
+    hay_turnos_sin_cerrar = False
     for historial in historiales:
         historial_turno = db.query(Turno).filter(Turno.id == historial.turno_id).first()
-        if historial_turno.estado != "cerrado":
-            raise HTTPException(status_code=409, detail="El turno no se ha cerrado aun")
+        if historial_turno and historial_turno.estado != "cerrado":
+            hay_turnos_sin_cerrar = True
+            break
 
-    
-    return historiales
+    return {
+        "data": historiales,
+        "advertencia": "Hay vehículos con turno sin cerrar" if hay_turnos_sin_cerrar else None
+    }
 
 from typing import Optional
 from fastapi import HTTPException
@@ -48,9 +54,6 @@ def historial_dia_con_filtro(
         
         if not current_turno:
             raise HTTPException(status_code=404, detail="No se ha encontrado el turno")
-
-        if current_turno.estado != "cerrado":
-            raise HTTPException(status_code=409, detail="El turno no se ha cerrado aun")
         
     if encargado:
         usuario = db.query(Usuario).filter(Usuario.nombre == encargado).first()
@@ -62,8 +65,9 @@ def historial_dia_con_filtro(
 
     historial = query.all()
 
-    # Obtener IDs únicos de turno del historial
+    # Obtener IDs únicos de turno del historial y verificar si hay sin cerrar
     turno_ids = {h.turno_id for h in historial}
+    hay_turnos_sin_cerrar = False
 
     for turno_id in turno_ids:
         turno_obj = db.query(Turno).filter(Turno.id == turno_id).first()
@@ -72,8 +76,12 @@ def historial_dia_con_filtro(
             raise HTTPException(status_code=404, detail="Turno no encontrado")
 
         if turno_obj.estado != "cerrado":
-            raise HTTPException(status_code=409, detail="Hay turnos sin cerrar en el historial")
-    return historial
+            hay_turnos_sin_cerrar = True
+
+    return {
+        "data": historial,
+        "advertencia": "Hay vehículos con turno sin cerrar" if hay_turnos_sin_cerrar else None
+    }
 
 @router.get("/rango")
 def historial_rango(
@@ -91,9 +99,15 @@ def historial_rango(
         HistoryEstacionamiento.fecha_salida <= hasta
     ).all()
 
+    # Verificar si hay turnos sin cerrar para la advertencia
+    hay_turnos_sin_cerrar = False
     for historial in historiales:
         historial_turno = db.query(Turno).filter(Turno.id == historial.turno_id).first()
-        if historial_turno.estado != "cerrado":
-            raise HTTPException(status_code=409, detail="El turno no se ha cerrado aun")
+        if historial_turno and historial_turno.estado != "cerrado":
+            hay_turnos_sin_cerrar = True
+            break
 
-    return historiales
+    return {
+        "data": historiales,
+        "advertencia": "Hay vehículos con turno sin cerrar" if hay_turnos_sin_cerrar else None
+    }

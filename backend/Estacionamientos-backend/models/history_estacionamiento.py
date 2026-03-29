@@ -1,6 +1,6 @@
 from datetime import date, datetime, time
 
-from sqlalchemy import Date, DateTime, Float, Integer, String, Time
+from sqlalchemy import Date, DateTime, Float, Integer, String, Time, Boolean
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database import Base
@@ -19,6 +19,9 @@ class HistoryEstacionamiento(Base):
     hora_salida: Mapped[time] = mapped_column(Time())
     placa: Mapped[str] = mapped_column(String(100))
     importe: Mapped[float] = mapped_column(Float)
+    metodo_pago: Mapped[str] = mapped_column(String(50), default="efectivo")  # 'efectivo' | 'tarjeta'
+    pagado: Mapped[bool] = mapped_column(Boolean, default=False)  # True cuando pago confirmado
+    payment_transaction_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)  # FK a payment_transactions
     updated_at: Mapped[datetime | None] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=True)
 
 
