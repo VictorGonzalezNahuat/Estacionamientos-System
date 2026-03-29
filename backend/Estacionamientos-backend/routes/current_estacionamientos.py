@@ -2,6 +2,7 @@ from datetime import date, datetime
 from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from core.datetime_utils import now_local_naive
 from core.security import get_current_user
 from database import get_db
 from models.current_estacionamiento import CurrentEstacionamiento
@@ -91,13 +92,15 @@ def ingresar_auto(auto: CurrentEstacionamientoCreate, current_user: Usuario = De
     
     tarifa = db.query(Tarifa).filter(Tarifa.default == 1).first()
 
+    momento_ingreso = now_local_naive()
+
     nuevo_vehiculo = CurrentEstacionamiento(
         placa = auto.placa,
         tarifa_id = tarifa.id,
         encargado_id = current_user.id,
         turno_id = turno.id,
-        fecha_entrada = date.today(),
-        hora_entrada = datetime.now().time()
+        fecha_entrada = momento_ingreso.date(),
+        hora_entrada = momento_ingreso.time()
     )
     estado_estacionamiento.espacios_ocupados += 1
     db.add(nuevo_vehiculo)
@@ -156,7 +159,7 @@ def sacar_auto(
         raise HTTPException(status_code=404, detail="Tarifa no encontrada")
 
     # Momento real de salida (se usa el mismo valor en todo el flujo)
-    salida_dt = datetime.now()
+    salida_dt = now_local_naive()
     fecha_salida = salida_dt.date()
     hora_salida = salida_dt.time()
 
@@ -252,7 +255,7 @@ def obtener_estacionados(current_user: Usuario = Depends(get_current_user), db: 
     tarifa_ids = {vehiculo.tarifa_id for vehiculo in estacionados}
     tarifas = db.query(Tarifa).filter(Tarifa.id.in_(tarifa_ids)).all()
     tarifas_por_id = {tarifa.id: tarifa for tarifa in tarifas}
-    referencia_dt = datetime.now()
+    referencia_dt = now_local_naive()
 
     resultado = []
     for vehiculo in estacionados:

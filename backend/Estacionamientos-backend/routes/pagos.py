@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 import os
+from core.datetime_utils import now_local_naive
 from core.security import get_current_user
 from core.payment_provider import get_payment_provider
 from database import get_db
@@ -115,7 +116,7 @@ def salir_tarjeta(
         raise HTTPException(status_code=404, detail="Tarifa no encontrada")
 
     # 3. Calcular importe
-    salida_dt = datetime.now()
+    salida_dt = now_local_naive()
     fecha_salida = salida_dt.date()
     hora_salida = salida_dt.time()
 
