@@ -338,26 +338,32 @@
 
 /* Botón secundario para regresar */
 .secondary-btn {
-  margin-bottom: 10px;
-  padding: 14px;
+  border: none;
+  border-radius: 18px;
+  padding: 20px;
   width: 100%;
-  border-radius: 16px;
-  border: 2px solid white;
-
-  background: rgba(255, 255, 255, 0.12);
-  color: white;
-  font-size: 18px;
-  font-weight: 600;
-
+  min-height: 64px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: 0.25s ease;
+  transition: all 0.25s ease;
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+  min-width: 132px;
+  background: linear-gradient(135deg, rgba(71, 85, 105, 0.9), rgba(51, 65, 85, 0.9));
+  border: 1px solid rgba(148, 163, 184, 0.45);
 }
 
-.secondary-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
+.secondary-btn:hover:not(:disabled) {
   transform: translateY(-2px);
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.32);
 }
 
-.secondary-btn:active {
-  transform: translateY(0);
+.secondary-btn:disabled {
+  opacity: 0.68;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }

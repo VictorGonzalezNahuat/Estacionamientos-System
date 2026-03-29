@@ -5,6 +5,13 @@
 
     <div class="content-card corte-card">
 
+      @if (advertenciaCorte) {
+      <div class="topbar-advertencia" role="status" aria-live="polite">
+        <div class="topbar-advertencia-label">Advertencia:</div>
+        <div class="topbar-advertencia-text">{{ advertenciaCorte }}</div>
+      </div>
+      }
+
       <!-- ENCABEZADO -->
       <div class="form-header">
 
@@ -44,7 +51,7 @@
               <th>H.Entrada</th>
               <th>H.Salida</th>
               <th>Tiempo</th>
-              <th>Importe</th>
+              <th class="th-importe">Importe</th>
             </tr>
           </thead>
 
@@ -60,7 +67,7 @@
               <td>{{ item.get('horaEntrada')?.value }}</td>
               <td>{{ item.get('horaSalida')?.value }}</td>
               <td>{{ item.get('tiempo')?.value }}</td>
-              <td>{{ item.get('importe')?.value | currency }}</td>
+              <td class="cell-importe">{{ item.get('importe')?.value | currency }}</td>
 
             </tr>
             }
@@ -83,7 +90,7 @@
           <input type="text" [value]="corteForm.get('totalTarjeta')?.value | currency:'MXN':'symbol':'1.2-2'"  readonly>
         </div>
 
-        <div class="total-box">
+        <div class="total-box total-general-box">
           <label>Total General</label>
           <input type="text" [value]="corteForm.get('totalGeneral')?.value | currency:'MXN':'symbol':'1.2-2'"  readonly>
         </div>

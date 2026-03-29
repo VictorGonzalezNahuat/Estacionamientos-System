@@ -39,6 +39,7 @@ export class Configuracion implements OnInit {
       MOBILE_PRINT: [false, Validators.required],
       SYNC_INTERVAL_MINUTES: [1, [Validators.required, Validators.min(1)]],
       ENTRY_TICKET_CODE_TYPE: ['', Validators.required],
+      PUBLIC_STATUS_BASE_URL: ['', Validators.required],
     });
   }
 

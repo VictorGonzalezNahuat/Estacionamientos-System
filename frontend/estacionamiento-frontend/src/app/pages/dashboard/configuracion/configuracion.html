@@ -170,6 +170,22 @@
       </small>
     </div>
 
+    <!-- URL pública para seguimiento móvil -->
+    <div class="form-group full-width">
+      <label for="publicStatusBaseUrl">URL pública de seguimiento móvil:</label>
+      <input
+        type="url"
+        id="publicStatusBaseUrl"
+        formControlName="PUBLIC_STATUS_BASE_URL"
+        placeholder="Ej: http://192.168.1.94:8100"
+        class="form-control"
+      />
+      <small *ngIf="configForm.get('PUBLIC_STATUS_BASE_URL')?.invalid && configForm.get('PUBLIC_STATUS_BASE_URL')?.touched"
+        class="error-message">
+        La URL pública de seguimiento es requerida
+      </small>
+    </div>
+
     <!-- Botones de acción -->
     <div class="form-actions full-width">
       <button

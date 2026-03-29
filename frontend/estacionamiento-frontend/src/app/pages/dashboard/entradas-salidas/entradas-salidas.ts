@@ -216,4 +216,55 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
     synth.speak(utterance);
   }
 
+  formatFecha(fecha: string | null | undefined): string {
+    if (!fecha) return '';
+
+    const fechaBase = fecha.includes('T') ? fecha.split('T')[0] : fecha;
+    const match = fechaBase.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+    if (match) {
+      const [, anio, mes, dia] = match;
+      return `${dia}/${mes}/${anio}`;
+    }
+
+    return fecha;
+  }
+
+  formatHora(hora: string | null | undefined): string {
+    if (!hora) return '';
+
+    const match = hora.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    if (!match) return hora;
+
+    const horas24 = Number(match[1]);
+    const minutos = match[2];
+    const segundos = match[3] ?? '00';
+
+    if (Number.isNaN(horas24) || horas24 < 0 || horas24 > 23) return hora;
+
+    const periodo = horas24 >= 12 ? 'pm' : 'am';
+    const horas12 = horas24 % 12 === 0 ? 12 : horas24 % 12;
+    const horas12Str = String(horas12).padStart(2, '0');
+
+    return `${horas12Str}:${minutos}:${segundos} ${periodo}`;
+  }
+
+  formatImporteAprox(value: unknown): string {
+    if (value === null || value === undefined || value === '') {
+      return 'N/D';
+    }
+
+    const amount = Number(value);
+    if (Number.isNaN(amount)) {
+      return String(value);
+    }
+
+    return new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  }
+
 }

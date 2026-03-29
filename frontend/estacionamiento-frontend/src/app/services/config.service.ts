@@ -12,6 +12,7 @@ export interface SystemConfigResponse {
   MOBILE_PRINT: boolean;
   SYNC_INTERVAL_MINUTES: number;
   ENTRY_TICKET_CODE_TYPE: string;
+  PUBLIC_STATUS_BASE_URL: string;
 }
 
 export interface SystemConfigUpdate {
@@ -24,6 +25,7 @@ export interface SystemConfigUpdate {
   MOBILE_PRINT: boolean;
   SYNC_INTERVAL_MINUTES: number;
   ENTRY_TICKET_CODE_TYPE: string;
+  PUBLIC_STATUS_BASE_URL: string;
 }
 
 @Injectable({

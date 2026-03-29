@@ -253,6 +253,17 @@ tbody tr:hover {
 	letter-spacing: 0.08em;
 }
 
+.th-monto {
+	background: linear-gradient(180deg, #dcfce7, #bbf7d0);
+	color: #166534;
+}
+
+.cell-monto {
+	font-weight: 800;
+	color: #166534;
+	background: rgba(187, 247, 208, 0.38);
+}
+
 .cell-actions {
 	min-width: 220px;
 }

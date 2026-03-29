@@ -1,10 +1,18 @@
-import { Component, inject, ChangeDetectionStrategy, OnInit } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CurrencyPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { ConfigService } from '../../../services/config.service';
 import { AlertService } from '../../../core/services/alert';
+
+interface HistorialResponse<T = any> {
+  data: T[];
+  advertencia: string | null;
+}
+
+const MENSAJE_ADVERTENCIA_TURNO_ABIERTO =
+  'Hay vehículos con turno sin cerrar. Cierra el turno para poder Exportar, Imprimir o Generar Reportes';
 
 @Component({
   selector: 'app-corte-caja',
@@ -21,8 +29,10 @@ export class CorteCaja implements OnInit {
   private http = inject(HttpClient);
   private config = inject(ConfigService);
   private alertService = inject(AlertService);
+  private cdr = inject(ChangeDetectorRef);
 
   corteForm: FormGroup;
+  advertenciaCorte: string | null = null;
 
   constructor() {
 
@@ -93,26 +103,27 @@ export class CorteCaja implements OnInit {
       params.encargado = encargado;
     }
 
-    this.http.get<any[]>(
+    this.http.get<HistorialResponse>(
       `${this.config.apiUrl}/history/dia/filtrar`,
       { params }
     ).subscribe({
-      next: (data) => {
+      next: (response) => {
+        const data = this.procesarRespuestaHistorial(response);
         this.cargarTabla(data);
+        this.cdr.markForCheck();
 
         if (!data || data.length === 0) {
           this.alertService.error('No se encontraron registros con ese filtro');
         }
       },
       error: (err) => {
+        this.advertenciaCorte = null;
+        this.cdr.markForCheck();
 
         const statusCode = err.status;
 
         if (statusCode === 404) {
           this.alertService.error(err.error?.detail || 'Recurso no encontrado');
-        }
-        else if (statusCode === 409) {
-          this.alertService.error('Hay turnos sin cerrar en el historial de busqueda');
         }
         else if (statusCode === 401) {
           this.alertService.error('Sesión expirada. Inicia sesión nuevamente');
@@ -131,20 +142,37 @@ export class CorteCaja implements OnInit {
 
   cargarHistorialRango(desde: string, hasta: string) {
 
-    this.http.get<any[]>(
+    this.http.get<HistorialResponse>(
       `${this.config.apiUrl}/history/rango`,
       {
         params: { desde, hasta }
       }
     ).subscribe({
-      next: (data) => {
+      next: (response) => {
+        const data = this.procesarRespuestaHistorial(response);
         this.cargarTabla(data);
+        this.cdr.markForCheck();
       },
       error: () => {
+        this.advertenciaCorte = null;
+        this.cdr.markForCheck();
         console.error('Error cargando historial por rango');
       }
     });
   }
+
+  private procesarRespuestaHistorial(response: HistorialResponse | any[]): any[] {
+    // Compatibilidad temporal: si el backend aún responde un arreglo directo, se usa tal cual.
+    if (Array.isArray(response)) {
+      this.advertenciaCorte = null;
+      return response;
+    }
+
+    this.advertenciaCorte = response?.advertencia ? MENSAJE_ADVERTENCIA_TURNO_ABIERTO : null;
+
+    return Array.isArray(response?.data) ? response.data : [];
+  }
+
   get registros(): FormArray {
     return this.corteForm.get('registros') as FormArray;
   }
@@ -157,10 +185,10 @@ export class CorteCaja implements OnInit {
         id: item.id,
         placa: item.placa,
         turnoId: item.turno_id,
-        fechaEntrada: item.fecha_entrada,
-        fechaSalida: item.fecha_salida,
-        horaEntrada: item.hora_entrada,
-        horaSalida: item.hora_salida,
+        fechaEntrada: this.formatearFecha(item.fecha_entrada),
+        fechaSalida: this.formatearFecha(item.fecha_salida),
+        horaEntrada: this.formatearHora(item.hora_entrada),
+        horaSalida: this.formatearHora(item.hora_salida),
         tiempo: this.calcularTiempo(
           item.fecha_entrada,
           item.hora_entrada,
@@ -172,6 +200,45 @@ export class CorteCaja implements OnInit {
     });
 
     this.calcularTotales();
+  }
+
+  private formatearFecha(fecha: string): string {
+    if (!fecha) {
+      return '';
+    }
+
+    const partes = fecha.split('-');
+
+    if (partes.length === 3) {
+      const [anio, mes, dia] = partes;
+      return `${dia}/${mes}/${anio}`;
+    }
+
+    return fecha;
+  }
+
+  private formatearHora(hora: string): string {
+    if (!hora) {
+      return '';
+    }
+
+    const partes = hora.split(':');
+
+    if (partes.length < 2) {
+      return hora;
+    }
+
+    const horas24 = Number(partes[0]);
+    const minutos = partes[1];
+
+    if (Number.isNaN(horas24)) {
+      return hora;
+    }
+
+    const periodo = horas24 >= 12 ? 'pm' : 'am';
+    const horas12 = horas24 % 12 || 12;
+
+    return `${String(horas12).padStart(2, '0')}:${minutos} ${periodo}`;
   }
 
   calcularTiempo(

@@ -106,8 +106,8 @@
 
         <!-- LISTA DE AUTOS LATERAL -->
         <div class="cars-sidebar">
-            <button class="btn-back" (click)="goDashboard()">
-            ← Regresar
+            <button class="secondary-btn" (click)="goDashboard()">
+            Regresar
             </button>
 
             <div class="cars-header">
@@ -122,19 +122,19 @@
                 <table class="autos-table" aria-label="Listado de autos dentro">
                     <thead>
                         <tr>
-                            <th scope="col">#</th>
                             <th scope="col">Placa</th>
                             <th scope="col">Fecha</th>
                             <th scope="col">Hora</th>
+                            <th scope="col" class="th-monto">Estimado</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @for (auto of estacionados(); track auto.placa; let i = $index) {
+                        @for (auto of estacionados(); track auto.placa) {
                         <tr>
-                            <td>{{ i + 1 }}</td>
                             <td class="cell-placa">{{ auto.placa }}</td>
-                            <td>{{ auto.fecha_entrada }}</td>
-                            <td>{{ auto.hora_entrada }}</td>
+                            <td>{{ formatFecha(auto.fecha_entrada) }}</td>
+                            <td>{{ formatHora(auto.hora_entrada) }}</td>
+                            <td class="cell-monto">{{ formatImporteAprox(auto.monto_estimado) }}</td>
                         </tr>
                         }
                     </tbody>
