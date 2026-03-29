@@ -5,6 +5,7 @@ import os
 from typing import Dict, Optional, Tuple
 
 import requests
+import stripe
 
 from core.payment_provider import ParsedWebhookEvent, normalize_to_json
 
@@ -17,14 +18,18 @@ class StripeService:
         self.secret_key = os.getenv("STRIPE_SECRET_KEY")
         self.publishable_key = os.getenv("STRIPE_PUBLISHABLE_KEY")
         self.webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+        self.webhook_secrets = [s.strip() for s in (self.webhook_secret or "").split(",") if s.strip()]
         self.base_url = os.getenv("WEBHOOK_URL")
         self.success_url = os.getenv("STRIPE_SUCCESS_URL")
         self.cancel_url = os.getenv("STRIPE_CANCEL_URL")
         self.currency = os.getenv("STRIPE_CURRENCY", "mxn").lower()
         self.api_base_url = "https://api.stripe.com/v1"
+        stripe.api_key = self.secret_key
 
         if not self.secret_key:
             raise ValueError("STRIPE_SECRET_KEY no configurado en .env")
+        if not self.webhook_secrets:
+            raise ValueError("STRIPE_WEBHOOK_SECRET no configurado en .env")
         if not self.base_url:
             raise ValueError("WEBHOOK_URL no configurado en .env")
 
@@ -84,35 +89,57 @@ class StripeService:
         return response.json()
 
     def validate_webhook_signature(self, headers: Dict[str, str], payload: str) -> bool:
-        """Valida Stripe-Signature con HMAC SHA256."""
+        """Valida Stripe-Signature con el validador oficial de Stripe."""
         stripe_signature = headers.get("Stripe-Signature") or headers.get("stripe-signature")
-        if not self.webhook_secret or not stripe_signature:
+        if not stripe_signature:
+            print("[stripe-webhook] Header Stripe-Signature ausente")
             return False
 
-        parts = {}
-        signatures_v1 = []
-        for part in stripe_signature.split(","):
-            if "=" in part:
-                k, v = part.split("=", 1)
-                key = k.strip()
-                value = v.strip()
-                if key == "v1":
-                    signatures_v1.append(value)
-                else:
-                    parts[key] = value
+        last_error = None
+        for secret in self.webhook_secrets:
+            # Camino principal: verificacion oficial de Stripe.
+            try:
+                stripe.Webhook.construct_event(
+                    payload=payload,
+                    sig_header=stripe_signature,
+                    secret=secret,
+                )
+                return True
+            except Exception as exc:
+                last_error = exc
 
-        timestamp = parts.get("t")
-        if not timestamp or not signatures_v1:
-            return False
+            # Fallback manual por compatibilidad con despliegues/proxies.
+            parts = {}
+            signatures_v1 = []
+            for part in stripe_signature.split(","):
+                if "=" in part:
+                    k, v = part.split("=", 1)
+                    key = k.strip()
+                    value = v.strip()
+                    if key == "v1":
+                        signatures_v1.append(value)
+                    else:
+                        parts[key] = value
 
-        signed_payload = f"{timestamp}.{payload}".encode("utf-8")
-        expected = hmac.new(
-            self.webhook_secret.encode("utf-8"),
-            signed_payload,
-            hashlib.sha256,
-        ).hexdigest()
+            timestamp = parts.get("t")
+            if not timestamp or not signatures_v1:
+                continue
 
-        return any(hmac.compare_digest(expected, sig) for sig in signatures_v1)
+            signed_payload = f"{timestamp}.{payload}".encode("utf-8")
+            expected = hmac.new(
+                secret.encode("utf-8"),
+                signed_payload,
+                hashlib.sha256,
+            ).hexdigest()
+
+            if any(hmac.compare_digest(expected, sig) for sig in signatures_v1):
+                return True
+
+        if last_error:
+            print(f"[stripe-webhook] Firma invalida: {last_error}")
+        else:
+            print("[stripe-webhook] Firma invalida: no se pudo validar con los secrets configurados")
+        return False
 
     def parse_webhook_event(self, payload: str) -> ParsedWebhookEvent:
         try:
