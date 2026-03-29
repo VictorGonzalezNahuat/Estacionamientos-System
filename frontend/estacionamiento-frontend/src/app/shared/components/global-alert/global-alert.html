@@ -185,16 +185,18 @@
 
     <!-- BOTONES METODO DE PAGO -->
     @if (alert.type === 'payment-method-select') {
-    <div class="alert-buttons alert-buttons-vertical">
-      <button class="alert-button btn-payment-cash"
-              (click)="alertService.handlePaymentMethodSelection('efectivo')">
-        {{ alert.confirmText || 'Efectivo' }}
-      </button>
-      <button class="alert-button btn-payment-card"
-              (click)="alertService.handlePaymentMethodSelection('tarjeta')">
-        {{ alert.secondaryText || 'Tarjeta (Stripe)' }}
-      </button>
-      <button class="alert-button btn-cancel"
+    <div class="alert-buttons payment-method-actions">
+      <div class="payment-method-main-row">
+        <button class="alert-button btn-payment-cash"
+                (click)="alertService.handlePaymentMethodSelection('efectivo')">
+          {{ alert.confirmText || 'Efectivo' }}
+        </button>
+        <button class="alert-button btn-payment-card"
+                (click)="alertService.handlePaymentMethodSelection('tarjeta')">
+          {{ alert.secondaryText || 'Pagar en linea' }}
+        </button>
+      </div>
+      <button class="alert-button btn-cancel btn-payment-cancel"
               (click)="alertService.handlePaymentMethodSelection(null)">
         {{ alert.cancelText || 'Cancelar' }}
       </button>

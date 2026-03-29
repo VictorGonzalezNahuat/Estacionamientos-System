@@ -217,7 +217,7 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
       'Selecciona como deseas cobrar la salida del vehiculo.',
       'Metodo de pago',
       'Efectivo',
-      'Tarjeta (Stripe)',
+      'Pagar en linea',
       'Cancelar'
     );
   }

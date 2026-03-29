@@ -233,12 +233,28 @@
   border-left: 6px solid #0ea5e9;
 }
 
-.alert-buttons-vertical {
+.payment-method-actions {
   flex-direction: column;
+  margin-top: 10px;
+}
+
+.payment-method-main-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
 }
 
 .btn-payment-cash,
 .btn-payment-card {
+  flex: 1;
+  margin-top: 0;
+  min-height: 56px;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 14px 12px;
+}
+
+.btn-payment-cancel {
   width: 100%;
   margin-top: 0;
 }
