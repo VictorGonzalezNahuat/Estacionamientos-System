@@ -90,14 +90,19 @@ class StripeService:
             return False
 
         parts = {}
+        signatures_v1 = []
         for part in stripe_signature.split(","):
             if "=" in part:
                 k, v = part.split("=", 1)
-                parts[k] = v
+                key = k.strip()
+                value = v.strip()
+                if key == "v1":
+                    signatures_v1.append(value)
+                else:
+                    parts[key] = value
 
         timestamp = parts.get("t")
-        signature_v1 = parts.get("v1")
-        if not timestamp or not signature_v1:
+        if not timestamp or not signatures_v1:
             return False
 
         signed_payload = f"{timestamp}.{payload}".encode("utf-8")
@@ -106,7 +111,8 @@ class StripeService:
             signed_payload,
             hashlib.sha256,
         ).hexdigest()
-        return hmac.compare_digest(expected, signature_v1)
+
+        return any(hmac.compare_digest(expected, sig) for sig in signatures_v1)
 
     def parse_webhook_event(self, payload: str) -> ParsedWebhookEvent:
         try:
