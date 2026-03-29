@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { ConfigService } from '../../../services/config.service';
 import { AlertService } from '../../../core/services/alert';
 import { ActivatedRoute, Router } from '@angular/router';
+import QRCode from 'qrcode';
 
 type MetodoPago = 'efectivo' | 'tarjeta';
 
@@ -22,6 +23,7 @@ interface PagoPendienteStorage {
   preferenciaId: string;
   placa: string;
   createdAt: number;
+  checkoutUrl?: string;
 }
 
 @Component({
@@ -63,6 +65,10 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
   preferenciaIdPendiente = signal<string | null>(null);
   placaPendientePago = signal<string | null>(null);
   pollingEnCurso = signal(false);
+  checkoutUrlPendiente = signal<string | null>(null);
+  checkoutQrDataUrl = signal<string | null>(null);
+  qrGenerando = signal(false);
+  qrVisible = signal(false);
 
 
 
@@ -249,10 +255,10 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
           return;
         }
 
-        this.guardarPagoPendiente(preferenciaId, placa);
+        this.guardarPagoPendiente(preferenciaId, placa, checkoutUrl);
+        this.mostrarQrPago(checkoutUrl);
+        this.iniciarPollingPago(preferenciaId);
         this.loading.set(false);
-
-        window.location.href = checkoutUrl;
       },
       error: () => {
         if (allowFallback) {
@@ -302,10 +308,14 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
   private restaurarPagoPendiente() {
     const preferenciaEnQuery = this.route.snapshot.queryParamMap.get('preferencia_id');
     const placaEnQuery = this.route.snapshot.queryParamMap.get('placa');
+    const checkoutUrlEnQuery = this.route.snapshot.queryParamMap.get('checkout_url');
 
     if (preferenciaEnQuery) {
       const placa = placaEnQuery?.toUpperCase().trim() || this.placaPendientePago() || '';
-      this.guardarPagoPendiente(preferenciaEnQuery, placa);
+      this.guardarPagoPendiente(preferenciaEnQuery, placa, checkoutUrlEnQuery ?? undefined);
+      if (checkoutUrlEnQuery) {
+        this.mostrarQrPago(checkoutUrlEnQuery);
+      }
       this.iniciarPollingPago(preferenciaEnQuery);
       return;
     }
@@ -315,6 +325,9 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
 
     this.preferenciaIdPendiente.set(pendiente.preferenciaId);
     this.placaPendientePago.set(pendiente.placa);
+    if (pendiente.checkoutUrl) {
+      this.mostrarQrPago(pendiente.checkoutUrl);
+    }
     this.iniciarPollingPago(pendiente.preferenciaId);
   }
 
@@ -427,14 +440,16 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
     return null;
   }
 
-  private guardarPagoPendiente(preferenciaId: string, placa: string) {
+  private guardarPagoPendiente(preferenciaId: string, placa: string, checkoutUrl?: string) {
     this.preferenciaIdPendiente.set(preferenciaId);
     this.placaPendientePago.set(placa);
+    this.checkoutUrlPendiente.set(checkoutUrl ?? null);
 
     const data: PagoPendienteStorage = {
       preferenciaId,
       placa,
       createdAt: Date.now(),
+      checkoutUrl,
     };
 
     localStorage.setItem(EntradasSalidas.PAGO_PENDIENTE_KEY, JSON.stringify(data));
@@ -461,6 +476,7 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
         preferenciaId: parsed.preferenciaId,
         placa: parsed.placa,
         createdAt: parsed.createdAt,
+        checkoutUrl: parsed.checkoutUrl,
       };
     } catch {
       this.limpiarPagoPendiente();
@@ -472,6 +488,52 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
     localStorage.removeItem(EntradasSalidas.PAGO_PENDIENTE_KEY);
     this.preferenciaIdPendiente.set(null);
     this.placaPendientePago.set(null);
+    this.checkoutUrlPendiente.set(null);
+    this.checkoutQrDataUrl.set(null);
+    this.qrVisible.set(false);
+  }
+
+  ocultarQrPago() {
+    this.qrVisible.set(false);
+  }
+
+  async copiarCheckoutUrl() {
+    const url = this.checkoutUrlPendiente();
+    if (!url) {
+      this.alert.error('No hay link de pago disponible para copiar.');
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      this.alert.success('Link de pago copiado al portapapeles.');
+    } catch {
+      this.alert.error('No se pudo copiar el link de pago.');
+    }
+  }
+
+  private mostrarQrPago(checkoutUrl: string) {
+    this.checkoutUrlPendiente.set(checkoutUrl);
+    this.qrVisible.set(true);
+    void this.generarQrDesdeCheckoutUrl(checkoutUrl);
+  }
+
+  private async generarQrDesdeCheckoutUrl(checkoutUrl: string) {
+    this.qrGenerando.set(true);
+    this.checkoutQrDataUrl.set(null);
+
+    try {
+      const dataUrl = await QRCode.toDataURL(checkoutUrl, {
+        errorCorrectionLevel: 'M',
+        margin: 2,
+        width: 320,
+      });
+      this.checkoutQrDataUrl.set(dataUrl);
+    } catch {
+      this.alert.error('No se pudo generar el codigo QR para el pago.');
+    } finally {
+      this.qrGenerando.set(false);
+    }
   }
 
   private detenerPollingPago() {

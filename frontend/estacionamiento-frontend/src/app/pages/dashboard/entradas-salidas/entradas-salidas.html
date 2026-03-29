@@ -147,3 +147,43 @@
 
 </div>
 
+@if (qrVisible()) {
+<div class="qr-overlay" role="dialog" aria-modal="true" aria-label="Pago con tarjeta">
+    <div class="qr-card">
+        <h2>Pago con Tarjeta</h2>
+        <p class="qr-subtitle">Pide al cliente escanear este codigo para completar el pago.</p>
+
+        @if (qrGenerando()) {
+        <div class="qr-loading">Generando codigo QR...</div>
+        } @else if (checkoutQrDataUrl()) {
+        <img class="qr-image" [src]="checkoutQrDataUrl()" alt="Codigo QR para pago" />
+        } @else {
+        <div class="qr-loading">No se pudo generar el QR. Usa el link manual.</div>
+        }
+
+        <p class="qr-status">
+            @if (pollingEnCurso()) {
+            Esperando confirmacion del pago...
+            } @else {
+            Consulta de pago pausada.
+            }
+        </p>
+
+        @if (checkoutUrlPendiente()) {
+        <a class="qr-link" [href]="checkoutUrlPendiente()" target="_blank" rel="noopener noreferrer">
+            Abrir link de pago
+        </a>
+        }
+
+        <div class="qr-actions">
+            <button type="button" class="secondary-btn qr-action-btn" (click)="copiarCheckoutUrl()">
+                Copiar link
+            </button>
+            <button type="button" class="secondary-btn qr-action-btn" (click)="ocultarQrPago()">
+                Cerrar vista QR
+            </button>
+        </div>
+    </div>
+</div>
+}
+
