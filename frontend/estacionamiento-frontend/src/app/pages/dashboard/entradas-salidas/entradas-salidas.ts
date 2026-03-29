@@ -16,7 +16,12 @@ interface SalidaTarjetaResponse {
 
 interface EstadoPagoResponse {
   estado_transaccion?: string;
+  transaccion_exitosa?: boolean;
+  mensaje_estado?: string;
   pagado?: boolean;
+  metodo_pago?: string;
+  importe?: number;
+  webhook_timestamp?: string;
 }
 
 interface PagoPendienteStorage {
@@ -369,12 +374,17 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
 
   private procesarEstadoPago(estado: EstadoPagoResponse) {
     const estadoTransaccion = (estado?.estado_transaccion ?? '').toLowerCase();
+    const transaccionExitosa = estado?.transaccion_exitosa === true;
     const pagado = estado?.pagado === true;
+    const mensajeEstado = estado?.mensaje_estado?.trim();
 
-    if (estadoTransaccion === 'completado' && pagado) {
+    if ((estadoTransaccion === 'completado' || transaccionExitosa) && pagado) {
       this.detenerPollingPago();
       this.limpiarPagoPendiente();
-      this.alert.success('Pago con tarjeta confirmado. Vehiculo retirado correctamente.', () => this.focusAndSelectPlaca());
+      this.alert.success(
+        mensajeEstado || 'Pago con tarjeta confirmado. Vehiculo retirado correctamente.',
+        () => this.focusAndSelectPlaca()
+      );
       this.speak('Pago con tarjeta confirmado. Vehiculo retirado correctamente');
       this.postOperacionExitosa();
       return;
@@ -384,7 +394,7 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
       this.detenerPollingPago();
       this.limpiarPagoPendiente();
       this.loading.set(false);
-      this.alert.error(`El pago fue ${estadoTransaccion}.`);
+      this.alert.error(mensajeEstado || `El pago fue ${estadoTransaccion}.`);
       return;
     }
   }
