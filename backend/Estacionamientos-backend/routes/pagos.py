@@ -1,4 +1,5 @@
 from datetime import datetime
+import json
 from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
@@ -16,7 +17,12 @@ from models.tarifa import Tarifa
 from models.turno import Turno
 from models.usuario import Usuario
 from printer.print import generar_ticket_salida_prueba, imprimir_ticket_red
-from schemas.payment_transaction import SalirTarjetaRequest, SalirTarjetaResponse, PaymentTransactionResponse
+from schemas.payment_transaction import (
+    SalirTarjetaRequest,
+    SalirTarjetaResponse,
+    PaymentTransactionResponse,
+    PagoEstadoDetalleResponse,
+)
 
 
 router = APIRouter()
@@ -24,6 +30,16 @@ router = APIRouter()
 
 def _get_provider_name() -> str:
     return os.getenv("PAYMENT_PROVIDER", "stripe").strip().lower()
+
+
+def _safe_json_loads(raw: str | None) -> dict:
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(raw)
+        return parsed if isinstance(parsed, dict) else {}
+    except Exception:
+        return {}
 
 
 def _calcular_importe_por_minutos(total_minutos: int, tarifa: Tarifa):
@@ -131,8 +147,40 @@ def salir_tarjeta(
 
     importe = _calcular_importe_por_minutos(total_minutos, tarifa)
 
-    # 4. Crear checkout en el proveedor configurado
+    # 4. Reusar checkout pendiente si existe (evita duplicados por reintentos de UI)
     selected_provider = request.provider or _get_provider_name()
+
+    tx_pendiente = db.query(PaymentTransaction).filter(
+        PaymentTransaction.placa == placa,
+        PaymentTransaction.estado == "pendiente"
+    ).order_by(desc(PaymentTransaction.created_at)).first()
+
+    if tx_pendiente:
+        metadata_existente = _safe_json_loads(tx_pendiente.metadata_mp)
+        checkout_existente = metadata_existente.get("checkout_url")
+        provider_existente = metadata_existente.get("provider", selected_provider)
+
+        historial_pendiente = db.query(HistoryEstacionamiento).filter(
+            HistoryEstacionamiento.payment_transaction_id == tx_pendiente.id,
+            HistoryEstacionamiento.pagado == False
+        ).first()
+
+        if checkout_existente and historial_pendiente:
+            return SalirTarjetaResponse(
+                mensaje="Ya existe una salida pendiente de pago para esta placa.",
+                preferencia_id=tx_pendiente.preferencia_id,
+                checkout_url=checkout_existente,
+                provider=provider_existente,
+                placa=tx_pendiente.placa,
+                monto=float(tx_pendiente.monto),
+                fecha_salida=str(historial_pendiente.fecha_salida),
+                hora_salida=str(historial_pendiente.hora_salida),
+                minutos_estadia=total_minutos,
+                ticket_bin="",
+                estado="pendiente"
+            )
+
+    # 5. Crear checkout en el proveedor configurado
 
     try:
         preferencia_id, checkout_url = get_payment_provider(selected_provider).create_checkout(
@@ -143,18 +191,23 @@ def salir_tarjeta(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al crear checkout: {str(e)}")
 
-    # 5. Guardar transacción de pago en BD (estado: pendiente)
+    # 6. Guardar transacción de pago en BD (estado: pendiente)
     payment_transaction = PaymentTransaction(
         preferencia_id=preferencia_id,
         placa=placa,
         monto=importe,
-        estado="pendiente"
+        estado="pendiente",
+        metadata_mp=json.dumps({
+            "provider": selected_provider,
+            "checkout_url": checkout_url,
+            "created_at": salida_dt.isoformat(),
+        }, ensure_ascii=True)
     )
     db.add(payment_transaction)
     db.flush()  # Para obtener el ID sin hacer commit aún
     payment_transaction_id = payment_transaction.id
 
-    # 6. Guardar salida en historial (sin marcar como pagado)
+    # 7. Guardar salida en historial (sin marcar como pagado)
     turno_usuario = db.query(Turno).filter(
         Turno.encargado_id == current_user.id,
         Turno.estado == "activo"
@@ -180,7 +233,7 @@ def salir_tarjeta(
     db.add(historial)
     db.commit()
 
-    # 7. Generar ticket de salida (para referencia, sin imprimir aún)
+    # 8. Generar ticket de salida (para referencia, sin imprimir aún)
     entrada = datetime.combine(vehiculo.fecha_entrada, vehiculo.hora_entrada)
     ticket_bytes = generar_ticket_salida_prueba(
         folio=f"SAL-{placa}-{salida_dt:%Y%m%d%H%M%S}",
@@ -202,12 +255,14 @@ def salir_tarjeta(
         mensaje="Salida registrada. Pendiente pago por tarjeta. Completa el pago para finalizar.",
         preferencia_id=preferencia_id,
         checkout_url=checkout_url,
+        provider=selected_provider,
         placa=placa,
         monto=importe,
         fecha_salida=str(fecha_salida),
         hora_salida=str(hora_salida),
         minutos_estadia=total_minutos,
-        ticket_bin=str(ticket_path)
+        ticket_bin=str(ticket_path),
+        estado="pendiente"
     )
 
 
@@ -261,8 +316,14 @@ async def _procesar_webhook(request: Request, db: Session, forced_provider: str 
         ).first()
     elif parsed.lookup_field == "placa":
         payment_transaction = db.query(PaymentTransaction).filter(
-            PaymentTransaction.placa == parsed.lookup_value
+            PaymentTransaction.placa == parsed.lookup_value,
+            PaymentTransaction.estado == "pendiente"
         ).order_by(desc(PaymentTransaction.created_at)).first()
+
+        if not payment_transaction:
+            payment_transaction = db.query(PaymentTransaction).filter(
+            PaymentTransaction.placa == parsed.lookup_value
+            ).order_by(desc(PaymentTransaction.created_at)).first()
     else:
         raise HTTPException(status_code=400, detail="lookup_field no soportado")
 
@@ -271,10 +332,25 @@ async def _procesar_webhook(request: Request, db: Session, forced_provider: str 
         return {"status": "not_found"}
 
     payment_transaction.webhook_timestamp = datetime.utcnow()
-    payment_transaction.metadata_mp = provider.serialize_event(parsed.event_payload or {})
+    existing_metadata = _safe_json_loads(payment_transaction.metadata_mp)
+    event_metadata = {
+        "provider_event": parsed.event_payload or {},
+    }
+    merged_metadata = {**existing_metadata, **event_metadata}
+    payment_transaction.metadata_mp = provider.serialize_event(merged_metadata)
     placa = payment_transaction.placa
 
     if parsed.normalized_status == "completado":
+        if payment_transaction.estado == "completado":
+            db.commit()
+            return {
+                "status": "processed_already",
+                "provider": provider.provider_name,
+                "lookup_field": parsed.lookup_field,
+                "lookup_value": parsed.lookup_value,
+                "transaction_status": payment_transaction.estado,
+            }
+
         payment_transaction.estado = "completado"
 
         historial = db.query(HistoryEstacionamiento).filter(
@@ -313,11 +389,14 @@ async def _procesar_webhook(request: Request, db: Session, forced_provider: str 
                 print(f"Error imprimiendo ticket: {e}")
 
     elif parsed.normalized_status == "rechazado":
-        payment_transaction.estado = "rechazado"
+        if payment_transaction.estado != "completado":
+            payment_transaction.estado = "rechazado"
     elif parsed.normalized_status == "cancelado":
-        payment_transaction.estado = "cancelado"
+        if payment_transaction.estado != "completado":
+            payment_transaction.estado = "cancelado"
     else:
-        payment_transaction.estado = "pendiente"
+        if payment_transaction.estado != "completado":
+            payment_transaction.estado = "pendiente"
 
     db.commit()
 
@@ -330,8 +409,47 @@ async def _procesar_webhook(request: Request, db: Session, forced_provider: str 
     }
 
 
+@router.get("/estado/{preferencia_id}", response_model=PagoEstadoDetalleResponse)
+def obtener_estado_pago_detalle(
+    preferencia_id: str,
+    db: Session = Depends(get_db)
+):
+    transaction = db.query(PaymentTransaction).filter(
+        PaymentTransaction.preferencia_id == preferencia_id
+    ).first()
+
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transacción no encontrada")
+
+    historial = db.query(HistoryEstacionamiento).filter(
+        HistoryEstacionamiento.payment_transaction_id == transaction.id
+    ).order_by(desc(HistoryEstacionamiento.id)).first()
+
+    estado_transaccion = transaction.estado
+    pagado = bool(historial.pagado) if historial else False
+    transaccion_exitosa = estado_transaccion == "completado" and pagado
+    mensaje_estado = {
+        "completado": "Pago confirmado",
+        "pendiente": "Pago pendiente de confirmacion",
+        "rechazado": "Pago rechazado",
+        "cancelado": "Pago cancelado",
+    }.get(estado_transaccion, "Estado de pago desconocido")
+
+    return PagoEstadoDetalleResponse(
+        preferencia_id=transaction.preferencia_id,
+        placa=transaction.placa,
+        estado_transaccion=estado_transaccion,
+        transaccion_exitosa=transaccion_exitosa,
+        mensaje_estado=mensaje_estado,
+        pagado=pagado,
+        metodo_pago=historial.metodo_pago if historial else None,
+        importe=float(historial.importe) if historial else float(transaction.monto),
+        webhook_timestamp=transaction.webhook_timestamp,
+    )
+
+
 @router.get("/pagos/{preferencia_id}", response_model=PaymentTransactionResponse)
-def obtener_estado_pago(
+def obtener_estado_pago_legacy(
     preferencia_id: str,
     current_user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -349,3 +467,39 @@ def obtener_estado_pago(
         raise HTTPException(status_code=404, detail="Transacción no encontrada")
 
     return PaymentTransactionResponse.from_orm(transaction)
+
+
+@router.get("/placa/{placa}/pendiente", response_model=PagoEstadoDetalleResponse)
+def obtener_pendiente_por_placa(
+    placa: str,
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    placa_norm = placa.strip().upper()
+    transaction = db.query(PaymentTransaction).filter(
+        PaymentTransaction.placa == placa_norm
+    ).order_by(desc(PaymentTransaction.created_at)).first()
+
+    if not transaction:
+        raise HTTPException(status_code=404, detail="No hay transacciones para la placa")
+
+    historial = db.query(HistoryEstacionamiento).filter(
+        HistoryEstacionamiento.payment_transaction_id == transaction.id
+    ).order_by(desc(HistoryEstacionamiento.id)).first()
+
+    return PagoEstadoDetalleResponse(
+        preferencia_id=transaction.preferencia_id,
+        placa=transaction.placa,
+        estado_transaccion=transaction.estado,
+        transaccion_exitosa=transaction.estado == "completado" and (bool(historial.pagado) if historial else False),
+        mensaje_estado={
+            "completado": "Pago confirmado",
+            "pendiente": "Pago pendiente de confirmacion",
+            "rechazado": "Pago rechazado",
+            "cancelado": "Pago cancelado",
+        }.get(transaction.estado, "Estado de pago desconocido"),
+        pagado=bool(historial.pagado) if historial else False,
+        metodo_pago=historial.metodo_pago if historial else None,
+        importe=float(historial.importe) if historial else float(transaction.monto),
+        webhook_timestamp=transaction.webhook_timestamp,
+    )

@@ -23,6 +23,7 @@ class PaymentTransactionResponse(BaseModel):
     placa: str
     monto: float
     estado: str
+    webhook_timestamp: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
 
@@ -40,12 +41,26 @@ class SalirTarjetaResponse(BaseModel):
     mensaje: str
     preferencia_id: str
     checkout_url: str
+    provider: str
     placa: str
     monto: float
     fecha_salida: str
     hora_salida: str
     minutos_estadia: int
     ticket_bin: str
+    estado: str = "pendiente"
 
     class Config:
         from_attributes = True
+
+
+class PagoEstadoDetalleResponse(BaseModel):
+    preferencia_id: str
+    placa: str
+    estado_transaccion: str
+    transaccion_exitosa: bool
+    mensaje_estado: str
+    pagado: bool
+    metodo_pago: Optional[str] = None
+    importe: Optional[float] = None
+    webhook_timestamp: Optional[datetime] = None
