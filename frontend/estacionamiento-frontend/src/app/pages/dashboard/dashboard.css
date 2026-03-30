@@ -275,6 +275,7 @@
 }
 
 .home-btn {
+  width: 84px;
   background: rgba(59, 130, 246, 0.2);
   border-color: rgba(59, 130, 246, 0.4);
   color: #93c5fd;

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Info icon">
+  <circle cx="64" cy="64" r="54" fill="#1e3a8a" stroke="#60a5fa" stroke-width="8"/>
+  <circle cx="64" cy="40" r="6" fill="#dbeafe"/>
+  <rect x="58" y="52" width="12" height="38" rx="6" fill="#dbeafe"/>
+</svg>

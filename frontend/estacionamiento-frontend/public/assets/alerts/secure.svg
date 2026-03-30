@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Secure icon">
+  <rect x="30" y="56" width="68" height="46" rx="10" fill="#0f172a" stroke="#22c55e" stroke-width="8"/>
+  <path d="M44 56V42c0-11 9-20 20-20s20 9 20 20v14" fill="none" stroke="#86efac" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="64" cy="78" r="7" fill="#86efac"/>
+  <rect x="61" y="78" width="6" height="12" rx="3" fill="#86efac"/>
+</svg>

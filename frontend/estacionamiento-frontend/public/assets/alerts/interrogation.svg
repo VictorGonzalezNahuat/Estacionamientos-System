@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Question icon">
+  <circle cx="64" cy="64" r="54" fill="#0f172a" stroke="#38bdf8" stroke-width="8"/>
+  <path d="M48 50c0-9 7-16 16-16 10 0 16 6 16 14 0 8-5 11-10 14-5 3-6 5-6 10" fill="none" stroke="#bae6fd" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="64" cy="92" r="5" fill="#bae6fd"/>
+</svg>

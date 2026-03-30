@@ -4,7 +4,10 @@
   <div class="tarifas-container">
     <!-- HEADER COMPACTO -->
     <div class="header">
-      <h1>📋 Gestión de Tarifas</h1>
+      <h1 class="header-title">
+        <img src="/assets/icons/tarifas/title.svg" alt="" class="header-title-icon" aria-hidden="true" />
+        <span>Gestión de Tarifas</span>
+      </h1>
     </div>
 
     <!-- TOPBAR: TARIFA DEFAULT ACTUAL -->
@@ -46,7 +49,7 @@
               (click)="obtenerProximoNumero()"
               title="Obtener siguiente número"
             >
-              🔍
+              <img src="/assets/icons/tarifas/search.svg" alt="" class="btn-fetch-icon" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -119,18 +122,20 @@
         <div class="button-group">
           <button
             type="submit"
-            class="btn btn-primary"
+            class="btn btn-primary btn-with-icon"
             [disabled]="tarifaForm.invalid"
           >
-            {{ editandoId() ? '💾 Actualizar' : '💾 Guardar' }}
+            <img src="/assets/icons/tarifas/save.svg" alt="" class="btn-icon" aria-hidden="true" />
+            <span>{{ editandoId() ? 'Actualizar' : 'Guardar' }}</span>
           </button>
 
           <button
             type="button"
-            class="btn btn-secondary"
+            class="btn btn-secondary btn-with-icon"
             (click)="limpiarFormulario()"
           >
-            🗑️ Limpiar
+            <img src="/assets/icons/tarifas/trash.svg" alt="" class="btn-icon" aria-hidden="true" />
+            <span>Limpiar</span>
           </button>
 
           @if (editandoId()) {
@@ -187,7 +192,7 @@
                   (click)="editarTarifa(tarifa)"
                   title="Editar"
                 >
-                  ✏️
+                  <img src="/assets/icons/tarifas/edit-action.svg" alt="" class="btn-action-icon" aria-hidden="true" />
                 </button>
                 <button
                   class="btn-action btn-default"
@@ -195,14 +200,18 @@
                   [disabled]="cargandoDefault() === tarifa.numero"
                   title="Establecer como tarifa default"
                 >
-                  {{ cargandoDefault() === tarifa.numero ? '⏳' : '⭐' }}
+                  @if (cargandoDefault() === tarifa.numero) {
+                  <img src="/assets/icons/tarifas/loading-action.svg" alt="" class="btn-action-icon icon-spin" aria-hidden="true" />
+                  } @else {
+                  <img src="/assets/icons/tarifas/star-action.svg" alt="" class="btn-action-icon" aria-hidden="true" />
+                  }
                 </button>
                 <button
                   class="btn-action btn-delete"
                   (click)="eliminarTarifa(tarifa.id)"
                   title="Eliminar"
                 >
-                  🗑️
+                  <img src="/assets/icons/tarifas/trash-action.svg" alt="" class="btn-action-icon" aria-hidden="true" />
                 </button>
               </td>
             </tr>

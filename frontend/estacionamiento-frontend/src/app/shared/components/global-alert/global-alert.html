@@ -13,12 +13,15 @@
       [class.pending-messages]="alert.type === 'pending-messages'"
       [class.payment-method-select]="alert.type === 'payment-method-select'">
 
-    <!-- ICONO -->
-    @if (alert.type !== 'info') {
+    <!-- ICONO SVG -->
     <div class="alert-icon">
-      {{ alert.type === 'success' ? '✔' : alert.type === 'confirm' ? '❓' : alert.type === 'session-restart' ? '🔄' : alert.type === 'password-input' ? '🔐' : alert.type === 'reset-password-step1' || alert.type === 'reset-password-step2' ? '🔑' : alert.type === 'pending-messages' ? '🔔' : alert.type === 'payment-method-select' ? '💳' : '⚠' }}
+      <img
+        class="alert-icon-image"
+        [src]="getAlertIconPath(alert.type)"
+        [alt]="getAlertIconAlt(alert.type)"
+        (error)="handleIconError($event)"
+      />
     </div>
-    }
 
     <!-- TÍTULO PARA CONFIRM / SESSION-RESTART / PASSWORD-INPUT -->
     @if ((alert.type === 'confirm' || alert.type === 'session-restart' || alert.type === 'password-input' || alert.type === 'reset-password-step1' || alert.type === 'reset-password-step2' || alert.type === 'pending-messages' || alert.type === 'payment-method-select') && alert.title) {

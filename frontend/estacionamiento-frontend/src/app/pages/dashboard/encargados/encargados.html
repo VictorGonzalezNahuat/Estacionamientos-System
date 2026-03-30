@@ -3,7 +3,10 @@
 
 	<div class="encargados-container">
 		<div class="header">
-			<h1>👥 Gestión de Encargados</h1>
+			<h1 class="title-with-icon">
+				<img src="/assets/icons/encargados/users.svg" alt="" class="title-icon" aria-hidden="true" />
+				<span>Gestion de Encargados</span>
+			</h1>
 		</div>
 
 		<div class="topbar-info">
@@ -15,8 +18,14 @@
 
 		<div class="main-content-grid">
 			<div class="form-card">
-				<h2 class="form-title">
-					{{ editandoCodigo() ? '✏️ Editar Usuario' : '➕ Nuevo Encargado' }}
+				<h2 class="form-title title-with-icon">
+					@if (editandoCodigo()) {
+						<img src="/assets/icons/encargados/edit.svg" alt="" class="title-icon" aria-hidden="true" />
+						<span>Editar Usuario</span>
+					} @else {
+						<img src="/assets/icons/encargados/add.svg" alt="" class="title-icon" aria-hidden="true" />
+						<span>Nuevo Encargado</span>
+					}
 				</h2>
 
 				<form [formGroup]="encargadoForm" (ngSubmit)="guardarUsuario()" class="form-grid">
@@ -117,17 +126,20 @@
 						></textarea>
 					</div>
 					<div class="button-group">
-						<button type="submit" class="btn btn-primary" [disabled]="encargadoForm.invalid || guardando()">
-							{{ guardando() ? '⏳ Guardando...' : (editandoCodigo() ? '💾 Actualizar' : '💾 Guardar') }}
+						<button type="submit" class="btn btn-primary btn-with-icon" [disabled]="encargadoForm.invalid || guardando()">
+							<img src="/assets/icons/encargados/save.svg" alt="" class="btn-icon" aria-hidden="true" />
+							<span>{{ guardando() ? 'Guardando...' : (editandoCodigo() ? 'Actualizar' : 'Guardar') }}</span>
 						</button>
 
-						<button type="button" class="btn btn-secondary" (click)="limpiarFormulario()">
-							🗑️ Limpiar
+						<button type="button" class="btn btn-secondary btn-with-icon" (click)="limpiarFormulario()">
+							<img src="/assets/icons/encargados/trash.svg" alt="" class="btn-icon" aria-hidden="true" />
+							<span>Limpiar</span>
 						</button>
 
 						@if (editandoCodigo()) {
-						<button type="button" class="btn btn-danger" (click)="cancelarEdicion()">
-							❌ Cancelar
+						<button type="button" class="btn btn-danger btn-with-icon" (click)="cancelarEdicion()">
+							<img src="/assets/icons/encargados/cancel.svg" alt="" class="btn-icon" aria-hidden="true" />
+							<span>Cancelar</span>
 						</button>
 						}
 					</div>
@@ -136,7 +148,10 @@
 
 			<div class="table-card">
 				<div class="table-header">
-					<h2 class="table-title">📊 Usuarios Registrados</h2>
+					<h2 class="table-title title-with-icon">
+						<img src="/assets/icons/encargados/chart.svg" alt="" class="title-icon" aria-hidden="true" />
+						<span>Usuarios Registrados</span>
+					</h2>
 					<button type="button" class="btn btn-secondary btn-refresh" (click)="cargarUsuarios()">
 						Actualizar
 					</button>
@@ -187,21 +202,21 @@
 										(click)="editarUsuario(usuario)"
 										title="Editar"
 									>
-										✏️
+										<img src="/assets/icons/encargados/edit-action.svg" alt="" class="btn-action-icon" aria-hidden="true" />
 									</button>
 									<button
 										class="btn-action btn-reset-pass"
 										(click)="iniciarResetPassword(usuario)"
 										title="Restablecer contraseña"
 									>
-										🔑
+										<img src="/assets/icons/encargados/key-action.svg" alt="" class="btn-action-icon" aria-hidden="true" />
 									</button>
 									<button
 										class="btn-action btn-delete"
 										(click)="eliminarUsuario(usuario.codigo)"
 										title="Eliminar"
 									>
-										🗑️
+										<img src="/assets/icons/encargados/trash-action.svg" alt="" class="btn-action-icon" aria-hidden="true" />
 									</button>
 								</td>
 							</tr>

@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Error icon">
+  <circle cx="64" cy="64" r="54" fill="#7f1d1d" stroke="#ef4444" stroke-width="8"/>
+  <path d="M46 46l36 36M82 46L46 82" fill="none" stroke="#fecaca" stroke-width="10" stroke-linecap="round"/>
+</svg>

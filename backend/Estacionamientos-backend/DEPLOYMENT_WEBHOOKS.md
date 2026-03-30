@@ -1,5 +1,7 @@
 # Despliegue: Webhooks de Pago (Stripe y Cloudflare)
 
+> Nota: Esta guia tambien fue integrada en `docs/deployment-webhooks.md` para centralizar la documentacion del proyecto.
+
 Este documento evita un problema comun en produccion: Stripe envia eventos, pero Cloudflare bloquea la peticion antes de llegar al backend.
 
 ## Contexto

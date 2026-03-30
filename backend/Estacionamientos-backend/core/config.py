@@ -222,3 +222,89 @@ def update_public_config_values(updates: dict) -> dict:
     PUBLIC_STATUS_BASE_URL = status_url
 
     return get_public_config_values()
+
+
+def update_database_config(updates: dict) -> dict:
+    """Actualiza solo la configuracion de la base de datos (DATABASE_CLOUD_URL)"""
+    global DATABASE_CLOUD_URL, APP_CONFIG
+
+    if not isinstance(updates, dict):
+        raise ValueError("Payload de configuracion invalido")
+
+    cloud_user = str(updates.get("DATABASE_CLOUD_USER", "")).strip()
+    cloud_password = str(updates.get("DATABASE_CLOUD_PASSWORD", ""))
+    cloud_host = str(updates.get("DATABASE_CLOUD_HOST", "")).strip()
+    cloud_port = int(updates.get("DATABASE_CLOUD_PORT", 3306))
+    cloud_name = str(updates.get("DATABASE_CLOUD_NAME", "")).strip()
+
+    if not cloud_password.strip():
+        raise ValueError("DATABASE_CLOUD_PASSWORD no puede estar vacia")
+    if not cloud_user or not cloud_host or not cloud_name:
+        raise ValueError("Los datos de DATABASE_CLOUD son obligatorios")
+
+    cloud_url = _build_cloud_db_url(
+        user=cloud_user,
+        password=cloud_password,
+        host=cloud_host,
+        port=cloud_port,
+        database=cloud_name,
+    )
+
+    normalized_cloud_url = _normalize_mysql_url(cloud_url)
+
+    # Actualizar config.json manteniendo las demas variables
+    new_data = {
+        **APP_CONFIG,
+        "DATABASE_CLOUD_URL": normalized_cloud_url,
+    }
+    _save_json_config(CONFIG_PATH, new_data)
+
+    APP_CONFIG = new_data
+    DATABASE_CLOUD_URL = normalized_cloud_url
+
+    return get_public_config_values()
+
+
+def update_other_config(updates: dict) -> dict:
+    """Actualiza las demas variables de configuracion (sin contraseña de BD)"""
+    global SYNC_AUTO_ENABLED, SYNC_INTERVAL_MINUTES, MOBILE_PRINT, ENTRY_TICKET_CODE_TYPE, PUBLIC_STATUS_BASE_URL, APP_CONFIG
+
+    if not isinstance(updates, dict):
+        raise ValueError("Payload de configuracion invalido")
+
+    # Validar que no intenten cambiar la configuracion de BD
+    db_fields = {"DATABASE_CLOUD_USER", "DATABASE_CLOUD_PASSWORD", "DATABASE_CLOUD_HOST", "DATABASE_CLOUD_PORT", "DATABASE_CLOUD_NAME"}
+    if updates.keys() & db_fields:
+        raise ValueError("No se puede actualizar la configuracion de base de datos desde este endpoint. Use el endpoint /base-datos")
+
+    # Solo actualizar campos que fueron proporcionados
+    new_auto_enabled = _to_bool(updates.get("SYNC_AUTO_ENABLED", SYNC_AUTO_ENABLED)) if "SYNC_AUTO_ENABLED" in updates else SYNC_AUTO_ENABLED
+    new_interval = int(updates.get("SYNC_INTERVAL_MINUTES", SYNC_INTERVAL_MINUTES)) if "SYNC_INTERVAL_MINUTES" in updates else SYNC_INTERVAL_MINUTES
+    new_mobile_print = _to_bool(updates.get("MOBILE_PRINT", MOBILE_PRINT)) if "MOBILE_PRINT" in updates else MOBILE_PRINT
+    new_code_type = _sanitize_entry_ticket_code_type(updates.get("ENTRY_TICKET_CODE_TYPE", ENTRY_TICKET_CODE_TYPE)) if "ENTRY_TICKET_CODE_TYPE" in updates else ENTRY_TICKET_CODE_TYPE
+    new_status_url = str(updates.get("PUBLIC_STATUS_BASE_URL", PUBLIC_STATUS_BASE_URL)).strip() if "PUBLIC_STATUS_BASE_URL" in updates else PUBLIC_STATUS_BASE_URL
+
+    # Validaciones
+    if new_interval < 1:
+        raise ValueError("SYNC_INTERVAL_MINUTES debe ser mayor o igual a 1")
+    if not new_status_url:
+        raise ValueError("PUBLIC_STATUS_BASE_URL no puede estar vacia")
+
+    new_data = {
+        **APP_CONFIG,
+        "SYNC_AUTO_ENABLED": new_auto_enabled,
+        "SYNC_INTERVAL_MINUTES": new_interval,
+        "MOBILE_PRINT": new_mobile_print,
+        "ENTRY_TICKET_CODE_TYPE": new_code_type,
+        "PUBLIC_STATUS_BASE_URL": new_status_url,
+    }
+    _save_json_config(CONFIG_PATH, new_data)
+
+    APP_CONFIG = new_data
+    SYNC_AUTO_ENABLED = new_auto_enabled
+    SYNC_INTERVAL_MINUTES = new_interval
+    MOBILE_PRINT = new_mobile_print
+    ENTRY_TICKET_CODE_TYPE = new_code_type
+    PUBLIC_STATUS_BASE_URL = new_status_url
+
+    return get_public_config_values()

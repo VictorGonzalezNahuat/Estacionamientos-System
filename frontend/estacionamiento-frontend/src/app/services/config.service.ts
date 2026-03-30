@@ -15,18 +15,23 @@ export interface SystemConfigResponse {
   PUBLIC_STATUS_BASE_URL: string;
 }
 
-export interface SystemConfigUpdate {
+export interface GeneralConfigUpdate {
+  SYNC_AUTO_ENABLED?: boolean;
+  MOBILE_PRINT?: boolean;
+  SYNC_INTERVAL_MINUTES?: number;
+  ENTRY_TICKET_CODE_TYPE?: string;
+  PUBLIC_STATUS_BASE_URL?: string;
+}
+
+export interface DatabaseConfigUpdate {
   DATABASE_CLOUD_USER: string;
   DATABASE_CLOUD_PASSWORD: string;
   DATABASE_CLOUD_HOST: string;
   DATABASE_CLOUD_PORT: number;
   DATABASE_CLOUD_NAME: string;
-  SYNC_AUTO_ENABLED: boolean;
-  MOBILE_PRINT: boolean;
-  SYNC_INTERVAL_MINUTES: number;
-  ENTRY_TICKET_CODE_TYPE: string;
-  PUBLIC_STATUS_BASE_URL: string;
 }
+
+export interface SystemConfigUpdate extends GeneralConfigUpdate, DatabaseConfigUpdate {}
 
 @Injectable({
   providedIn: 'root'
@@ -71,6 +76,14 @@ export class ConfigService {
   // Métodos para la configuración del sistema
   getSystemConfig(): Observable<SystemConfigResponse> {
     return this.http.get<SystemConfigResponse>(`${this.apiUrl}/config/`);
+  }
+
+  updateGeneralConfig(config: GeneralConfigUpdate): Observable<SystemConfigResponse> {
+    return this.http.patch<SystemConfigResponse>(`${this.apiUrl}/config/`, config);
+  }
+
+  updateDatabaseConfig(config: DatabaseConfigUpdate): Observable<SystemConfigResponse> {
+    return this.http.patch<SystemConfigResponse>(`${this.apiUrl}/config/base-datos`, config);
   }
 
   updateSystemConfig(config: SystemConfigUpdate): Observable<SystemConfigResponse> {
