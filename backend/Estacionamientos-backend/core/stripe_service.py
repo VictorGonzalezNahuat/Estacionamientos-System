@@ -175,6 +175,7 @@ class StripeService:
             lookup_field="preferencia_id",
             lookup_value=session_id,
             normalized_status=normalized_status,
+            provider_transaction_id=data_object.get("payment_intent"),
             event_payload=event_data,
         )
 

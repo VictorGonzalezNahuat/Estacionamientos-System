@@ -26,6 +26,7 @@ def crear_usuario(usuario: UsuarioCreate, db: Session = Depends(get_db)):
         comision=usuario.comision,
         rol=rol_json,
         observaciones=usuario.observaciones,
+        email=usuario.email,
     )
 
     db.add(nuevo_usuario)

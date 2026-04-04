@@ -1,6 +1,7 @@
 from datetime import date, datetime, time
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 
 from core.security import get_current_user, verify_password
 from database import get_db
@@ -8,20 +9,22 @@ from models.current_estacionamiento import CurrentEstacionamiento
 from models.turno import Turno
 from models.usuario import Usuario
 from schemas.auth import ConfirmPasswordRequest
-from schemas.turno import TurnoCreate, TurnoResponse
+from schemas.turno import MiTurnoResponse, TurnoCreate, TurnoResponse
 
 
 router = APIRouter()
 
 
-@router.get("/mi-turno")
+@router.get("/mi-turno", response_model=MiTurnoResponse)
 def mi_turno(current_user: Usuario = Depends(get_current_user), db:Session = Depends(get_db)):
-    turno = db.query(Turno).filter(Turno.encargado_id == current_user.id, Turno.estado == "activo").first()
+    turno = db.query(Turno).filter(Turno.encargado_id == current_user.id, or_(Turno.estado == "activo", Turno.estado == "pendiente_corte")).first()
 
     if not turno:
-        return {"abierto": False}
+        return {"estado": "sin-turno"}
+
+    estado = "abierto" if turno.estado == "activo" else "pendiente-corte"
     
-    return {"abierto": True,
+    return {"estado": estado,
             "turno_id": turno.id,
             "hora_apertura": turno.hora_inicio}
 
@@ -31,6 +34,14 @@ def turnos_activos(current_user: Usuario = Depends(get_current_user), db:Session
 
     if not turnos:
         raise HTTPException(status_code=404, detail="No hay turnos activos")
+    return turnos
+
+@router.get("/pendientes_corte")
+def turnos_activos(current_user: Usuario = Depends(get_current_user), db:Session = Depends(get_db)):
+    turnos = db.query(Turno).filter(Turno.estado == "pendiente_corte").all()
+
+    if not turnos:
+        raise HTTPException(status_code=404, detail="No hay turnos pendientes para corte de caja")
     return turnos
 
 
@@ -80,14 +91,14 @@ def cerrar_turno(data: ConfirmPasswordRequest, current_user: Usuario = Depends(g
     if not verify_password(data.password, current_user.password_hash):
         raise HTTPException(status_code=401, detail="Contraseña Incorrecta")
     
-    existe_turno = db.query(Turno).filter(Turno.encargado_id == Usuario.id, Turno.estado == "activo").first()
+    existe_turno = db.query(Turno).filter(Turno.encargado_id == current_user.id, Turno.estado == "activo").first()
 
     if not existe_turno:
         raise HTTPException(status_code=404, detail="No existe turno abierto para este encargado")
 
     existe_turno.hora_fin = datetime.now().time()
     existe_turno.fecha_fin = date.today()
-    existe_turno.estado = "cerrado"
+    existe_turno.estado = "pendiente_corte"
     
 
     db.commit()

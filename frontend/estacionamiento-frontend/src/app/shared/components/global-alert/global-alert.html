@@ -11,7 +11,12 @@
        [class.reset-password-step1]="alert.type === 'reset-password-step1'"
       [class.reset-password-step2]="alert.type === 'reset-password-step2'"
       [class.pending-messages]="alert.type === 'pending-messages'"
-      [class.payment-method-select]="alert.type === 'payment-method-select'">
+      [class.payment-method-select]="alert.type === 'payment-method-select'"
+      [class.corte-caja-preview]="alert.type === 'corte-caja-preview'"
+      [class.corte-caja-status]="alert.type === 'corte-caja-status'"
+      [class.corte-caja-status-processing]="alert.type === 'corte-caja-status' && alert.data?.stage === 'processing'"
+      [class.corte-caja-status-success]="alert.type === 'corte-caja-status' && alert.data?.stage === 'success'"
+      [class.corte-caja-status-error]="alert.type === 'corte-caja-status' && alert.data?.stage === 'error'">
 
     <!-- ICONO SVG -->
     <div class="alert-icon">
@@ -24,7 +29,7 @@
     </div>
 
     <!-- TÍTULO PARA CONFIRM / SESSION-RESTART / PASSWORD-INPUT -->
-    @if ((alert.type === 'confirm' || alert.type === 'session-restart' || alert.type === 'password-input' || alert.type === 'reset-password-step1' || alert.type === 'reset-password-step2' || alert.type === 'pending-messages' || alert.type === 'payment-method-select') && alert.title) {
+    @if ((alert.type === 'confirm' || alert.type === 'session-restart' || alert.type === 'password-input' || alert.type === 'reset-password-step1' || alert.type === 'reset-password-step2' || alert.type === 'pending-messages' || alert.type === 'payment-method-select' || alert.type === 'corte-caja-preview' || alert.type === 'corte-caja-status') && alert.title) {
     <div class="alert-title">
       {{ alert.title }}
     </div>
@@ -32,8 +37,29 @@
 
     <!-- MENSAJE SIMPLE -->
     @if (alert.message) {
-    <div [class.alert-message]="alert.type === 'confirm' || alert.type === 'session-restart' || alert.type === 'password-input' || alert.type === 'reset-password-step1' || alert.type === 'reset-password-step2'">
+    <div [class.alert-message]="alert.type === 'confirm' || alert.type === 'session-restart' || alert.type === 'password-input' || alert.type === 'reset-password-step1' || alert.type === 'reset-password-step2' || alert.type === 'corte-caja-preview' || alert.type === 'corte-caja-status'">
       {{ alert.message }}
+    </div>
+    }
+
+    <!-- MODO ESTADO CORTE DE CAJA -->
+    @if (alert.type === 'corte-caja-status') {
+    <div class="corte-caja-status-container">
+      @if (alert.data?.stage === 'processing') {
+      <div class="corte-caja-processing">
+        <div class="corte-caja-processing-spinner" aria-hidden="true"></div>
+        <div class="corte-caja-processing-text">Procesando...</div>
+      </div>
+      }
+
+      @if (alert.data?.stage === 'success') {
+      <div class="corte-caja-status-success">
+        <div class="corte-caja-status-kv">
+          <span class="corte-caja-status-label">ID del corte</span>
+          <span class="corte-caja-status-value">#{{ alert.data?.corteId }}</span>
+        </div>
+      </div>
+      }
     </div>
     }
 
@@ -46,6 +72,111 @@
         <li class="pending-message-item">{{ message }}</li>
         }
       </ul>
+    </div>
+    }
+
+    <!-- MODO CORTE DE CAJA -->
+    @if (alert.type === 'corte-caja-preview') {
+    <div class="corte-caja-preview-container">
+      @if (alert.data?.stage === 'input') {
+      <div class="corte-caja-preview-copy">
+        Revisa el total calculado y captura el total declarado para generar la previsualización del corte.
+      </div>
+
+      <div class="corte-caja-preview-summary">
+        <div class="corte-caja-preview-summary-header">
+          <span class="corte-caja-preview-summary-title">Montos del turno {{ alert.data?.turnoId ? '#' + alert.data?.turnoId : '' }}</span>
+          <span class="corte-caja-preview-summary-subtitle">Verifica efectivo y tarjeta antes de continuar</span>
+        </div>
+
+        <div class="corte-caja-preview-summary-grid">
+          <div class="corte-caja-preview-card corte-caja-preview-card-strong">
+            <span class="corte-caja-preview-label">Total calculado</span>
+            <span class="corte-caja-preview-value corte-caja-preview-value-highlight">{{ formatCurrency(alert.data?.totalGeneral) }}</span>
+          </div>
+
+          <div class="corte-caja-preview-card">
+            <span class="corte-caja-preview-label">Total efectivo</span>
+            <span class="corte-caja-preview-value">{{ formatCurrency(alert.data?.totalEfectivo) }}</span>
+          </div>
+
+          <div class="corte-caja-preview-card">
+            <span class="corte-caja-preview-label">Total tarjeta</span>
+            <span class="corte-caja-preview-value">{{ formatCurrency(alert.data?.totalTarjeta) }}</span>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="corte-caja-preview-field corte-caja-preview-field-emphasis">
+        <label class="corte-caja-preview-field-label">Total declarado</label>
+        <div class="corte-caja-preview-input-wrap">
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            class="corte-caja-preview-input"
+            [(ngModel)]="alert.inputValue"
+            placeholder="0.00"
+          />
+          <div class="corte-caja-preview-input-note">Monto que ingresarás para comparar contra el total calculado.</div>
+        </div>
+      </div>
+
+      <div class="corte-caja-preview-hint">
+        El corte no se enviará hasta que revises la previsualización y presiones Aceptar.
+      </div>
+
+      <div class="corte-caja-preview-footer-text">
+        Registros: {{ alert.data?.registros }}
+      </div>
+      }
+
+      @if (alert.data?.stage === 'preview') {
+      <div class="corte-caja-preview-copy">
+        Verifica el resumen final antes de confirmar el corte en el backend.
+      </div>
+
+      <div class="corte-caja-preview-summary corte-caja-preview-summary-preview">
+        <div class="corte-caja-preview-summary-header">
+          <span class="corte-caja-preview-summary-title">Resumen final de turno {{ alert.data?.turnoId ? '#' + alert.data?.turnoId : '' }}</span>
+          <span class="corte-caja-preview-summary-subtitle">Confirma los montos antes de realizar el corte</span>
+        </div>
+
+        <div class="corte-caja-preview-summary-grid corte-caja-preview-grid-preview">
+          <div class="corte-caja-preview-card corte-caja-preview-card-strong">
+            <span class="corte-caja-preview-label">Total calculado</span>
+            <span class="corte-caja-preview-value corte-caja-preview-value-highlight">{{ formatCurrency(alert.data?.totalGeneral) }}</span>
+          </div>
+
+          <div class="corte-caja-preview-card">
+            <span class="corte-caja-preview-label">Total declarado</span>
+            <span class="corte-caja-preview-value">{{ formatCurrency(alert.data?.totalDeclarado) }}</span>
+          </div>
+
+          <div class="corte-caja-preview-card">
+            <span class="corte-caja-preview-label">Total tarjeta</span>
+            <span class="corte-caja-preview-value">{{ formatCurrency(alert.data?.totalTarjeta) }}</span>
+          </div>
+
+            <div class="corte-caja-preview-card corte-caja-preview-card-highlight">
+            <span class="corte-caja-preview-label">Diferencia</span>
+            <span class="corte-caja-preview-value">{{ formatCurrency(getCorteCajaPreviewDifference(alert)) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="corte-caja-preview-difference"
+           [class.is-zero]="getCorteCajaPreviewDifference(alert) === 0"
+           [class.is-positive]="getCorteCajaPreviewDifference(alert) > 0"
+           [class.is-negative]="getCorteCajaPreviewDifference(alert) < 0">
+        {{ getCorteCajaPreviewDifferenceLabel(alert) }}
+      </div>
+
+        <div class="corte-caja-preview-footer-text">
+          Registros: {{ alert.data?.registros }}
+        </div>
+      }
     </div>
     }
 
@@ -67,14 +198,14 @@
         <div class="info-card card-blue">
           <span class="info-label">Fecha</span>
           <span class="info-value">
-            {{ alert.data?.fecha_salida }}
+            {{ formatAlertDate(alert.data?.fecha_salida) }}
           </span>
         </div>
 
         <div class="info-card card-blue">
           <span class="info-label">Hora</span>
           <span class="info-value">
-            {{ alert.data?.hora_salida }}
+            {{ formatAlertTime(alert.data?.hora_salida) }}
           </span>
         </div>
       </div>
@@ -157,7 +288,7 @@
     }
 
     <!-- BOTONES -->
-    @if (alert.type === 'confirm' || alert.type === 'password-input') {
+    @if (alert.type === 'confirm' || alert.type === 'password-input' || alert.type === 'corte-caja-preview') {
     <div class="alert-buttons">
       @if (alert.type === 'confirm') {
       <button class="alert-button btn-cancel"
@@ -171,6 +302,20 @@
         Cancelar
       </button>
       }
+      @if (alert.type === 'corte-caja-preview') {
+      @if (alert.data?.stage === 'input') {
+      <button class="alert-button btn-cancel"
+              (click)="alertService.handleCorteCajaPreviewCancel()">
+        Cancelar
+      </button>
+      }
+      @if (alert.data?.stage === 'preview') {
+      <button class="alert-button btn-cancel btn-preview-edit"
+              (click)="alertService.handleCorteCajaPreviewBack()">
+        {{ alert.secondaryText || 'Editar total' }}
+      </button>
+      }
+      }
       @if (alert.type === 'confirm') {
       <button class="alert-button btn-confirm"
               (click)="alertService.handleConfirm(true)">
@@ -181,6 +326,23 @@
       <button class="alert-button btn-confirm"
               (click)="alertService.handlePasswordConfirm(true)">
         {{ alert.confirmText || 'Aceptar' }}
+      </button>
+      }
+      @if (alert.type === 'corte-caja-preview' && alert.data?.stage === 'input') {
+      <button class="alert-button btn-confirm btn-preview-continue"
+              [disabled]="!isCorteCajaPreviewInputValid(alert)"
+              (click)="alertService.handleCorteCajaPreviewContinue()">
+        {{ alert.confirmText || 'Continuar' }}
+      </button>
+      }
+      @if (alert.type === 'corte-caja-preview' && alert.data?.stage === 'preview') {
+      <button class="alert-button btn-confirm btn-preview-confirm"
+              (click)="alertService.handleCorteCajaPreviewConfirm()">
+        {{ alert.confirmText || 'Aceptar' }}
+      </button>
+      <button class="alert-button btn-cancel btn-preview-cancel"
+              (click)="alertService.handleCorteCajaPreviewCancel()">
+        {{ alert.cancelText || 'Cancelar' }}
       </button>
       }
     </div>
@@ -202,6 +364,22 @@
       <button class="alert-button btn-cancel btn-payment-cancel"
               (click)="alertService.handlePaymentMethodSelection(null)">
         {{ alert.cancelText || 'Cancelar' }}
+      </button>
+    </div>
+    }
+
+    <!-- BOTONES ESTADO CORTE -->
+    @if (alert.type === 'corte-caja-status' && alert.data?.stage !== 'processing') {
+    <div class="corte-caja-status-actions">
+      @if (alert.data?.stage === 'success') {
+      <button class="alert-button btn-confirm btn-corte-download"
+              (click)="alertService.handleCorteCajaStatusDownload()">
+        {{ alert.confirmText || 'Descargar PDF' }}
+      </button>
+      }
+      <button class="alert-button btn-cancel btn-corte-close"
+              (click)="alertService.handleCorteCajaStatusClose()">
+        {{ alert.cancelText || 'Cerrar' }}
       </button>
     </div>
     }
@@ -251,7 +429,7 @@
         }
 
     <!-- BOTÓN GLOBAL (para SUCCESS / ERROR / INFO) -->
-        @if (alert.type !== 'confirm' && alert.type !== 'session-restart' && alert.type !== 'password-input' && alert.type !== 'reset-password-step1' && alert.type !== 'reset-password-step2' && alert.type !== 'pending-messages' && alert.type !== 'payment-method-select') {
+        @if (alert.type !== 'confirm' && alert.type !== 'session-restart' && alert.type !== 'password-input' && alert.type !== 'reset-password-step1' && alert.type !== 'reset-password-step2' && alert.type !== 'pending-messages' && alert.type !== 'payment-method-select' && alert.type !== 'corte-caja-preview' && alert.type !== 'corte-caja-status') {
     <button class="alert-button"
             (click)="alertService.close()">
       Aceptar

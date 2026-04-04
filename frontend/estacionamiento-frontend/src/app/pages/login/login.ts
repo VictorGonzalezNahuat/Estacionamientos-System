@@ -76,9 +76,11 @@ export class Login implements AfterViewInit {
     }).subscribe({
       next: ({ user, turno }) => {
         const nombre = user?.nombre ?? 'usuario';
-        const msg = turno?.abierto === true
+        const msg = turno?.estado === 'abierto'
           ? `Bienvenido ${nombre}, actualmente cuentas con un turno abierto`
-          : `Bienvenido ${nombre}, actualmente no tienes turno abierto`;
+          : turno?.estado === 'pendiente-corte'
+            ? `Bienvenido ${nombre}, actualmente tu turno está pendiente de corte de caja`
+            : `Bienvenido ${nombre}, actualmente no tienes turno abierto`;
         this.speak(msg);
       }
     });

@@ -6,6 +6,13 @@ import { ConfigService } from '../services/config.service';
 import { AlertService } from '../core/services/alert';
 import { AuthService } from '../services/auth.service';
 
+type MiTurnoEstado = 'sin-turno' | 'abierto' | 'pendiente-corte';
+type MiTurnoResponse = {
+  estado: MiTurnoEstado;
+  turno_id?: number;
+  hora_apertura?: string;
+};
+
 export const turnoGuard: CanActivateFn = () => {
 
   const http = inject(HttpClient);
@@ -22,13 +29,18 @@ export const turnoGuard: CanActivateFn = () => {
         return of(router.createUrlTree(['/dashboard']));
       }
 
-      return http.get<{ abierto: boolean }>(
+      return http.get<MiTurnoResponse>(
         `${configService.apiUrl}/turnos/mi-turno`
       ).pipe(
         map(response => {
 
-          if (response.abierto === false) {
+          if (response.estado === 'sin-turno') {
             return true;
+          }
+
+          if (response.estado === 'pendiente-corte') {
+            alertService.error('El turno actual debe ser cortado antes de iniciar uno nuevo.');
+            return router.createUrlTree(['/dashboard']);
           }
 
           alertService.error('Ya existe un turno abierto para este usuario.');

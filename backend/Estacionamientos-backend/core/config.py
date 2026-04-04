@@ -5,7 +5,7 @@ from typing import Any
 from urllib.parse import quote, unquote, urlparse
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-CONFIG_PATH = BASE_DIR / "config.json"
+CONFIG_PATH = BASE_DIR / "config" / "config.json"
 
 
 def _load_dotenv(dotenv_path: Path) -> None:
@@ -64,6 +64,13 @@ def _sanitize_entry_ticket_code_type(value: Any) -> str:
     return mode if mode in {"BARCODE", "QR"} else "BARCODE"
 
 
+def _sanitize_notice_text(value: Any) -> str:
+    if value is None:
+        return ""
+    text = str(value).replace("\r\n", "\n").replace("\r", "\n")
+    return text.strip()
+
+
 def _extract_cloud_db_parts(database_url: str) -> dict:
     raw_url = (database_url or "").strip()
     if not raw_url:
@@ -111,7 +118,7 @@ def _normalize_mysql_url(database_url: str) -> str:
     return database_url
 
 DATABASE_URL = os.getenv("DATABASE_URL")
-APP_CONFIG = _load_json_config(BASE_DIR / "config.json")
+APP_CONFIG = _load_json_config(CONFIG_PATH)
 
 DATABASE_CLOUD_URL = str(
     APP_CONFIG.get("DATABASE_CLOUD_URL") or os.getenv("DATABASE_CLOUD_URL", "")
@@ -137,6 +144,13 @@ PUBLIC_STATUS_BASE_URL = str(
 if not PUBLIC_STATUS_BASE_URL:
     PUBLIC_STATUS_BASE_URL = "http://localhost:8100"
 
+AVISO_ENTRADA = _sanitize_notice_text(
+    APP_CONFIG.get("AVISO_ENTRADA", APP_CONFIG.get("aviso_entrada", os.getenv("AVISO_ENTRADA", "")))
+)
+AVISO_SALIDA = _sanitize_notice_text(
+    APP_CONFIG.get("AVISO_SALIDA", APP_CONFIG.get("aviso_salida", os.getenv("AVISO_SALIDA", "")))
+)
+
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL no esta configurada en variables de entorno")
 
@@ -159,11 +173,13 @@ def get_public_config_values() -> dict:
         "MOBILE_PRINT": MOBILE_PRINT,
         "ENTRY_TICKET_CODE_TYPE": ENTRY_TICKET_CODE_TYPE,
         "PUBLIC_STATUS_BASE_URL": PUBLIC_STATUS_BASE_URL,
+        "AVISO_ENTRADA": AVISO_ENTRADA,
+        "AVISO_SALIDA": AVISO_SALIDA,
     }
 
 
 def update_public_config_values(updates: dict) -> dict:
-    global DATABASE_CLOUD_URL, SYNC_AUTO_ENABLED, SYNC_INTERVAL_MINUTES, MOBILE_PRINT, ENTRY_TICKET_CODE_TYPE, PUBLIC_STATUS_BASE_URL, APP_CONFIG
+    global DATABASE_CLOUD_URL, SYNC_AUTO_ENABLED, SYNC_INTERVAL_MINUTES, MOBILE_PRINT, ENTRY_TICKET_CODE_TYPE, PUBLIC_STATUS_BASE_URL, AVISO_ENTRADA, AVISO_SALIDA, APP_CONFIG
 
     if not isinstance(updates, dict):
         raise ValueError("Payload de configuracion invalido")
@@ -198,6 +214,8 @@ def update_public_config_values(updates: dict) -> dict:
     mobile_print = _to_bool(updates.get("MOBILE_PRINT", MOBILE_PRINT))
     code_type = _sanitize_entry_ticket_code_type(updates.get("ENTRY_TICKET_CODE_TYPE", ENTRY_TICKET_CODE_TYPE))
     status_url = str(updates.get("PUBLIC_STATUS_BASE_URL", PUBLIC_STATUS_BASE_URL)).strip()
+    aviso_entrada = _sanitize_notice_text(updates.get("AVISO_ENTRADA", AVISO_ENTRADA))
+    aviso_salida = _sanitize_notice_text(updates.get("AVISO_SALIDA", AVISO_SALIDA))
     if not status_url:
         raise ValueError("PUBLIC_STATUS_BASE_URL no puede estar vacia")
 
@@ -210,6 +228,8 @@ def update_public_config_values(updates: dict) -> dict:
         "MOBILE_PRINT": mobile_print,
         "ENTRY_TICKET_CODE_TYPE": code_type,
         "PUBLIC_STATUS_BASE_URL": status_url,
+        "AVISO_ENTRADA": aviso_entrada,
+        "AVISO_SALIDA": aviso_salida,
     }
     _save_json_config(CONFIG_PATH, new_data)
 
@@ -220,6 +240,8 @@ def update_public_config_values(updates: dict) -> dict:
     MOBILE_PRINT = mobile_print
     ENTRY_TICKET_CODE_TYPE = code_type
     PUBLIC_STATUS_BASE_URL = status_url
+    AVISO_ENTRADA = aviso_entrada
+    AVISO_SALIDA = aviso_salida
 
     return get_public_config_values()
 
@@ -267,7 +289,7 @@ def update_database_config(updates: dict) -> dict:
 
 def update_other_config(updates: dict) -> dict:
     """Actualiza las demas variables de configuracion (sin contraseña de BD)"""
-    global SYNC_AUTO_ENABLED, SYNC_INTERVAL_MINUTES, MOBILE_PRINT, ENTRY_TICKET_CODE_TYPE, PUBLIC_STATUS_BASE_URL, APP_CONFIG
+    global SYNC_AUTO_ENABLED, SYNC_INTERVAL_MINUTES, MOBILE_PRINT, ENTRY_TICKET_CODE_TYPE, PUBLIC_STATUS_BASE_URL, AVISO_ENTRADA, AVISO_SALIDA, APP_CONFIG
 
     if not isinstance(updates, dict):
         raise ValueError("Payload de configuracion invalido")
@@ -283,6 +305,8 @@ def update_other_config(updates: dict) -> dict:
     new_mobile_print = _to_bool(updates.get("MOBILE_PRINT", MOBILE_PRINT)) if "MOBILE_PRINT" in updates else MOBILE_PRINT
     new_code_type = _sanitize_entry_ticket_code_type(updates.get("ENTRY_TICKET_CODE_TYPE", ENTRY_TICKET_CODE_TYPE)) if "ENTRY_TICKET_CODE_TYPE" in updates else ENTRY_TICKET_CODE_TYPE
     new_status_url = str(updates.get("PUBLIC_STATUS_BASE_URL", PUBLIC_STATUS_BASE_URL)).strip() if "PUBLIC_STATUS_BASE_URL" in updates else PUBLIC_STATUS_BASE_URL
+    new_aviso_entrada = _sanitize_notice_text(updates.get("AVISO_ENTRADA", AVISO_ENTRADA)) if "AVISO_ENTRADA" in updates else AVISO_ENTRADA
+    new_aviso_salida = _sanitize_notice_text(updates.get("AVISO_SALIDA", AVISO_SALIDA)) if "AVISO_SALIDA" in updates else AVISO_SALIDA
 
     # Validaciones
     if new_interval < 1:
@@ -297,6 +321,8 @@ def update_other_config(updates: dict) -> dict:
         "MOBILE_PRINT": new_mobile_print,
         "ENTRY_TICKET_CODE_TYPE": new_code_type,
         "PUBLIC_STATUS_BASE_URL": new_status_url,
+        "AVISO_ENTRADA": new_aviso_entrada,
+        "AVISO_SALIDA": new_aviso_salida,
     }
     _save_json_config(CONFIG_PATH, new_data)
 
@@ -306,5 +332,7 @@ def update_other_config(updates: dict) -> dict:
     MOBILE_PRINT = new_mobile_print
     ENTRY_TICKET_CODE_TYPE = new_code_type
     PUBLIC_STATUS_BASE_URL = new_status_url
+    AVISO_ENTRADA = new_aviso_entrada
+    AVISO_SALIDA = new_aviso_salida
 
     return get_public_config_values()

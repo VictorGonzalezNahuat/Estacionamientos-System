@@ -6,6 +6,13 @@ import { ConfigService } from '../services/config.service';
 import { AlertService } from '../core/services/alert';
 import { AuthService } from '../services/auth.service';
 
+type MiTurnoEstado = 'sin-turno' | 'abierto' | 'pendiente-corte';
+type MiTurnoResponse = {
+  estado: MiTurnoEstado;
+  turno_id?: number;
+  hora_apertura?: string;
+};
+
 export const cierreTurnoGuard: CanActivateFn = () => {
 
   const http = inject(HttpClient);
@@ -22,13 +29,18 @@ export const cierreTurnoGuard: CanActivateFn = () => {
         return of(router.createUrlTree(['/dashboard']));
       }
 
-      return http.get<{ abierto: boolean }>(
+      return http.get<MiTurnoResponse>(
         `${configService.apiUrl}/turnos/mi-turno`
       ).pipe(
         map(response => {
 
-          if (response.abierto === true) {
+          if (response.estado === 'abierto') {
             return true;
+          }
+
+          if (response.estado === 'pendiente-corte') {
+            alertService.error('Hay un turno con corte-pendiente.');
+            return router.createUrlTree(['/dashboard']);
           }
 
           alertService.error('No tienes un turno abierto para cerrar.');

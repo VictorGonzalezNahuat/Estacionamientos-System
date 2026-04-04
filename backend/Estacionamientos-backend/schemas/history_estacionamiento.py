@@ -13,4 +13,5 @@ class HistoryEstacionamientoBase(BaseModel):
     hora_salida: time
     placa: str
     importe: float
+    corte_id: Optional[int] = None
 

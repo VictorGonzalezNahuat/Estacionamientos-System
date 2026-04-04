@@ -1,0 +1,178 @@
+<div class="configuracion-cortes-container">
+	<div class="config-header">
+		<h1>Configuración de Cortes de Caja</h1>
+		<p>Administra parámetros SMTP y plantilla de envío automático de reportes.</p>
+	</div>
+
+	<div *ngIf="isLoading" class="loading-message">
+		<p>Cargando configuración de cortes...</p>
+	</div>
+
+	<form [formGroup]="configForm" *ngIf="!isLoading" class="config-form">
+		<section class="config-group">
+			<div class="config-group-header">
+				<h2>Envío automático de reportes</h2>
+				<p>Habilita o deshabilita el envío automático del reporte de cortes al cerrar turno.</p>
+			</div>
+
+			<div class="switch-card">
+				<div class="switch-copy">
+					<h3>Autosend Report</h3>
+					<p>Si está activo, el sistema enviará reportes por correo según esta configuración.</p>
+				</div>
+
+				<label class="sync-switch" for="autosendReport" aria-label="Habilitar envío automático de reportes">
+					<input
+						type="checkbox"
+						id="autosendReport"
+						formControlName="AUTOSEND_REPORT"
+					/>
+					<span class="sync-slider"></span>
+				</label>
+			</div>
+		</section>
+
+		<section class="config-group">
+			<div class="config-group-header">
+				<h2>Servidor SMTP</h2>
+				<p>Datos necesarios para establecer conexión y autenticación con el servidor de correo.</p>
+			</div>
+
+			<div class="config-grid">
+				<div class="form-group">
+					<label for="smtpHost">SMTP Host:</label>
+					<input
+						id="smtpHost"
+						type="text"
+						formControlName="SMTP_HOST"
+						placeholder="Ej: smtp.gmail.com"
+						class="form-control"
+						autocomplete="off"
+					/>
+				</div>
+
+				<div class="form-group">
+					<label for="smtpPort">SMTP Port:</label>
+					<input
+						id="smtpPort"
+						type="number"
+						min="1"
+						formControlName="SMTP_PORT"
+						class="form-control"
+						inputmode="numeric"
+					/>
+				</div>
+
+				<div class="form-group">
+					<label for="smtpUsername">SMTP Username:</label>
+					<input
+						id="smtpUsername"
+						type="text"
+						formControlName="SMTP_USERNAME"
+						placeholder="Ej: notificaciones@dominio.com"
+						class="form-control"
+						autocomplete="off"
+					/>
+				</div>
+
+				<div class="form-group">
+					<label for="smtpPassword">SMTP Password:</label>
+					<div class="input-with-toggle">
+						<input
+							[type]="isSmtpPasswordVisible ? 'text' : 'password'"
+							id="smtpPassword"
+							formControlName="SMTP_PASSWORD"
+							placeholder="Ingresa la contraseña SMTP"
+							class="form-control"
+							autocomplete="new-password"
+						/>
+						<button
+							type="button"
+							class="input-toggle-btn"
+							(click)="toggleSmtpPasswordVisibility()"
+							[attr.aria-label]="isSmtpPasswordVisible ? 'Ocultar contraseña SMTP' : 'Mostrar contraseña SMTP'"
+						>
+							{{ isSmtpPasswordVisible ? 'Ocultar' : 'Mostrar' }}
+						</button>
+					</div>
+					<small class="helper-message">Por seguridad, se requiere capturar la contraseña en cada actualización.</small>
+				</div>
+
+				<div class="form-group switch-inline">
+					<label for="smtpUseTls">SMTP Use TLS:</label>
+					<label class="mini-switch" aria-label="Usar TLS para SMTP">
+						<input
+							id="smtpUseTls"
+							type="checkbox"
+							formControlName="SMTP_USE_TLS"
+						/>
+						<span>{{ configForm.get('SMTP_USE_TLS')?.value ? 'Activo' : 'Inactivo' }}</span>
+					</label>
+				</div>
+
+				<div class="form-group">
+					<label for="smtpTimeout">SMTP Timeout (segundos):</label>
+					<input
+						id="smtpTimeout"
+						type="number"
+						min="1"
+						formControlName="SMTP_TIMEOUT_SECONDS"
+						class="form-control"
+						inputmode="numeric"
+					/>
+				</div>
+			</div>
+		</section>
+
+		<section class="config-group">
+			<div class="config-group-header">
+				<h2>Plantilla del reporte</h2>
+				<p>Personaliza remitente y asunto para los correos de reporte de cortes de caja.</p>
+			</div>
+
+			<div class="config-grid">
+				<div class="form-group">
+					<label for="reportFromName">Nombre remitente:</label>
+					<input
+						id="reportFromName"
+						type="text"
+						formControlName="REPORT_FROM_NAME"
+						placeholder="Ej: Sistema de Estacionamiento"
+						class="form-control"
+					/>
+				</div>
+
+				<div class="form-group full-width">
+					<label for="reportSubjectTemplate">Plantilla de asunto:</label>
+					<input
+						id="reportSubjectTemplate"
+						type="text"
+						formControlName="REPORT_SUBJECT_TEMPLATE"
+						placeholder="Ej: Corte de Caja - {fecha}"
+						class="form-control"
+					/>
+				</div>
+			</div>
+		</section>
+
+		<div class="form-actions">
+			<button
+				type="button"
+				(click)="onSubmit()"
+				[disabled]="!isFormValid() || isSaving"
+				class="btn btn-primary"
+			>
+				{{ isSaving ? 'Guardando...' : 'Guardar Configuración de Cortes' }}
+			</button>
+
+			<button
+				type="button"
+				(click)="onReset()"
+				[disabled]="isSaving"
+				class="btn btn-secondary"
+			>
+				Restablecer
+			</button>
+		</div>
+	</form>
+</div>

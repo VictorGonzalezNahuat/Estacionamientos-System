@@ -18,19 +18,31 @@ router = APIRouter()
 def historial_hoy(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
 
     hoy = date.today()
-    historiales = db.query(HistoryEstacionamiento).filter(HistoryEstacionamiento.fecha_salida == hoy).all()
+    historiales = db.query(HistoryEstacionamiento).filter(
+        HistoryEstacionamiento.fecha_salida == hoy,
+        HistoryEstacionamiento.corte_id == None
+    ).all()
     
-    # Verificar si hay turnos sin cerrar para la advertencia
+    # Verificar si hay turnos sin cerrar o cortes pendientes
     hay_turnos_sin_cerrar = False
+    hay_cortes_pendientes = False
     for historial in historiales:
         historial_turno = db.query(Turno).filter(Turno.id == historial.turno_id).first()
-        if historial_turno and historial_turno.estado != "cerrado":
-            hay_turnos_sin_cerrar = True
-            break
+        if historial_turno:
+            if historial_turno.estado == "activo":
+                hay_turnos_sin_cerrar = True
+            elif historial_turno.estado == "pendiente_corte":
+                hay_cortes_pendientes = True
+
+    advertencia = None
+    if hay_turnos_sin_cerrar:
+        advertencia = "Hay vehículos con turno sin cerrar"
+    elif hay_cortes_pendientes:
+        advertencia = "Hay cortes de caja pendientes"
 
     return {
         "data": historiales,
-        "advertencia": "Hay vehículos con turno sin cerrar" if hay_turnos_sin_cerrar else None
+        "advertencia": advertencia
     }
 
 from typing import Optional
@@ -46,7 +58,8 @@ def historial_dia_con_filtro(
 ):
     
     query = db.query(HistoryEstacionamiento).filter(
-        HistoryEstacionamiento.fecha_salida == fecha
+        HistoryEstacionamiento.fecha_salida == fecha,
+        HistoryEstacionamiento.corte_id == None
     )
     if turno is not None:
         query = query.filter(HistoryEstacionamiento.turno_id == turno)
@@ -75,7 +88,7 @@ def historial_dia_con_filtro(
         if not turno_obj:
             raise HTTPException(status_code=404, detail="Turno no encontrado")
 
-        if turno_obj.estado != "cerrado":
+        if turno_obj.estado == "activo":
             hay_turnos_sin_cerrar = True
 
     return {
@@ -96,18 +109,28 @@ def historial_rango(
 
     historiales = db.query(HistoryEstacionamiento).filter(
         HistoryEstacionamiento.fecha_salida >= desde,
-        HistoryEstacionamiento.fecha_salida <= hasta
+        HistoryEstacionamiento.fecha_salida <= hasta,
+        HistoryEstacionamiento.corte_id == None
     ).all()
 
-    # Verificar si hay turnos sin cerrar para la advertencia
+    # Verificar si hay turnos sin cerrar o cortes pendientes
     hay_turnos_sin_cerrar = False
+    hay_cortes_pendientes = False
     for historial in historiales:
         historial_turno = db.query(Turno).filter(Turno.id == historial.turno_id).first()
-        if historial_turno and historial_turno.estado != "cerrado":
-            hay_turnos_sin_cerrar = True
-            break
+        if historial_turno:
+            if historial_turno.estado == "activo":
+                hay_turnos_sin_cerrar = True
+            elif historial_turno.estado == "pendiente_corte":
+                hay_cortes_pendientes = True
+
+    advertencia = None
+    if hay_turnos_sin_cerrar:
+        advertencia = "Hay vehículos con turno sin cerrar"
+    elif hay_cortes_pendientes:
+        advertencia = "Hay cortes de caja pendientes"
 
     return {
         "data": historiales,
-        "advertencia": "Hay vehículos con turno sin cerrar" if hay_turnos_sin_cerrar else None
+        "advertencia": advertencia
     }

@@ -174,7 +174,7 @@ export class Dashboard implements OnInit, OnDestroy {
     return this.http.get<any>(`${this.configService.apiUrl}/turnos/mi-turno`).pipe(
       catchError(() => of(null)),
       switchMap((turno) => {
-        if (turno?.abierto !== true) {
+        if (turno?.estado !== 'abierto') {
           return of<PendingMessage[]>([]);
         }
 

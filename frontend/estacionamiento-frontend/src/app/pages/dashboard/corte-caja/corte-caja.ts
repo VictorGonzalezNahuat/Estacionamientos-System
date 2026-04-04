@@ -1,8 +1,9 @@
-import { Component, inject, ChangeDetectionStrategy, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CurrencyPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { ConfigService } from '../../../services/config.service';
 import { AlertService } from '../../../core/services/alert';
 
@@ -10,6 +11,16 @@ interface HistorialResponse<T = any> {
   data: T[];
   advertencia: string | null;
 }
+
+type MetodoPagoHistorial = 'efectivo' | 'tarjeta' | string | null | undefined;
+
+type MiTurnoEstado = 'sin-turno' | 'abierto' | 'pendiente-corte';
+
+type MiTurnoResponse = {
+  estado: MiTurnoEstado;
+  turno_id?: number;
+  hora_apertura?: string;
+};
 
 const MENSAJE_ADVERTENCIA_TURNO_ABIERTO =
   'Hay vehículos con turno sin cerrar. Cierra el turno para poder Exportar, Imprimir o Generar Reportes';
@@ -33,6 +44,7 @@ export class CorteCaja implements OnInit {
 
   corteForm: FormGroup;
   advertenciaCorte: string | null = null;
+  private redireccionCorteTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
 
@@ -57,6 +69,10 @@ export class CorteCaja implements OnInit {
   }
   ngOnInit(): void {
     this.cargarUsuarioActual();
+  }
+
+  ngOnDestroy(): void {
+    this.limpiarRedireccionPostCorte();
   }
 
   cargarUsuarioActual() {
@@ -195,7 +211,8 @@ export class CorteCaja implements OnInit {
           item.fecha_salida,
           item.hora_salida
         ),
-        importe: item.importe
+        importe: item.importe,
+        metodoPago: this.obtenerMetodoPago(item)
       });
     });
 
@@ -280,7 +297,8 @@ export class CorteCaja implements OnInit {
       horaEntrada: [data.horaEntrada],
       horaSalida: [data.horaSalida],
       tiempo: [data.tiempo],
-      importe: [data.importe]
+      importe: [data.importe],
+      metodoPago: [data.metodoPago ?? 'efectivo']
     });
 
     this.registros.push(registro);
@@ -309,15 +327,28 @@ export class CorteCaja implements OnInit {
 
     const registros = this.registros.getRawValue();
 
-    const total = registros.reduce(
-      (acc: number, item: any) => acc + Number(item.importe),
-      0
+    const totals = registros.reduce(
+      (acc: { general: number; efectivo: number; tarjeta: number }, item: any) => {
+        const importe = Number(item.importe ?? 0);
+        const metodoPago = this.normalizarMetodoPago(item.metodoPago);
+
+        acc.general += importe;
+
+        if (metodoPago === 'tarjeta') {
+          acc.tarjeta += importe;
+        } else {
+          acc.efectivo += importe;
+        }
+
+        return acc;
+      },
+      { general: 0, efectivo: 0, tarjeta: 0 }
     );
 
     this.corteForm.patchValue({
-      totalGeneral: total,
-      totalEfectivo: total,
-      totalTarjeta: 0
+      totalGeneral: totals.general,
+      totalEfectivo: totals.efectivo,
+      totalTarjeta: totals.tarjeta
     });
   }
 
@@ -342,8 +373,83 @@ export class CorteCaja implements OnInit {
     console.log('Exportando...');
   }
 
-  imprimir() {
-    window.print();
+  async cortarCaja() {
+    if (this.advertenciaCorte) {
+      this.alertService.error(this.advertenciaCorte);
+      return;
+    }
+
+    try {
+      const turno = await firstValueFrom(
+        this.http.get<MiTurnoResponse>(`${this.config.apiUrl}/turnos/mi-turno`)
+      );
+
+      if (turno?.estado === 'abierto') {
+        this.alertService.error('El turno debe cerrarse para realizar el corte de caja.');
+        return;
+      }
+
+      const turnoId = Number(turno?.turno_id);
+      if (!Number.isFinite(turnoId)) {
+        this.alertService.error('No se pudo obtener el turno actual para realizar el corte');
+        return;
+      }
+
+      const formValues = this.corteForm.getRawValue();
+      const totalGeneral = Number(formValues.totalGeneral ?? 0);
+      const totalEfectivo = Number(formValues.totalEfectivo ?? 0);
+      const totalTarjeta = Number(formValues.totalTarjeta ?? 0);
+      const registros = this.registros.length;
+
+      const totalDeclarado = await this.alertService.requestCorteCajaPreview({
+        turnoId,
+        totalGeneral,
+        totalEfectivo,
+        totalTarjeta,
+        registros,
+        fecha: formValues.fecha,
+        encargado: formValues.encargado,
+      });
+
+      if (totalDeclarado === null) {
+        return;
+      }
+
+      const corteResponse = await firstValueFrom(
+        this.http.post(`${this.config.apiUrl}/corte-caja/`, {
+          turno_id: turnoId,
+          total_declarado: totalDeclarado,
+        })
+      );
+
+      const corteId = Number((corteResponse as any)?.id);
+      if (!Number.isFinite(corteId)) {
+        this.alertService.showCorteCajaError('El corte se proceso, pero no se recibio un id valido para descargar el PDF.');
+        return;
+      }
+
+      this.alertService.showCorteCajaSuccess(
+        corteId,
+        () => this.descargarPdfCorte(corteId),
+        () => this.redirigirDashboardMain()
+      );
+      this.programarRedireccionPostCorte();
+    } catch (err: any) {
+      console.error('Error realizando corte de caja', err);
+
+      const statusCode = err?.status;
+      if (statusCode === 400) {
+        this.alertService.showCorteCajaError(err?.error?.detail || 'No fue posible realizar el corte de caja');
+      } else if (statusCode === 401) {
+        this.alertService.showCorteCajaError('Sesión expirada. Inicia sesión nuevamente');
+      } else if (statusCode === 404) {
+        this.alertService.showCorteCajaError('No se encontró un turno abierto para cortar caja');
+      } else if (statusCode === 422) {
+        this.alertService.showCorteCajaError('El total declarado no es válido');
+      } else {
+        this.alertService.showCorteCajaError('Error inesperado al realizar el corte de caja');
+      }
+    }
   }
 
   duplicarCorte() {
@@ -352,5 +458,93 @@ export class CorteCaja implements OnInit {
 
   guardarEnSistema() {
     console.log('Guardando...');
+  }
+
+  private obtenerMetodoPago(item: any): MetodoPagoHistorial {
+    return item?.metodo_pago ?? item?.metodoPago ?? item?.tipo_pago ?? item?.payment_method ?? null;
+  }
+
+  private normalizarMetodoPago(value: MetodoPagoHistorial): 'efectivo' | 'tarjeta' {
+    const normalized = String(value ?? '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+    // Soporta variantes devueltas por backend: "TARJETA", "pago con tarjeta", "stripe", etc.
+    if (
+      normalized === '2'
+      || normalized.includes('tarjeta')
+      || normalized.includes('card')
+      || normalized.includes('credito')
+      || normalized.includes('debito')
+      || normalized.includes('stripe')
+      || normalized.includes('mercadopago')
+      || normalized.includes('mercado pago')
+      || normalized === 'mp'
+    ) {
+      return 'tarjeta';
+    }
+
+    return 'efectivo';
+  }
+
+  private async descargarPdfCorte(corteId: number): Promise<void> {
+    const response = await firstValueFrom(
+      this.http.get(`${this.config.apiUrl}/corte-caja/${corteId}/pdf`, {
+        observe: 'response',
+        responseType: 'blob',
+      })
+    );
+
+    const blob = response.body;
+    if (!blob) {
+      throw new Error('No se recibio el archivo PDF');
+    }
+
+    const contentDisposition = response.headers.get('content-disposition') || '';
+    const fileName = this.extraerNombreArchivo(contentDisposition) || `corte-${corteId}.pdf`;
+
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.URL.revokeObjectURL(url);
+  }
+
+  private programarRedireccionPostCorte(): void {
+    this.limpiarRedireccionPostCorte();
+    this.redireccionCorteTimeout = setTimeout(() => {
+      this.alertService.handleCorteCajaStatusClose();
+    }, 8000);
+  }
+
+  private limpiarRedireccionPostCorte(): void {
+    if (this.redireccionCorteTimeout) {
+      clearTimeout(this.redireccionCorteTimeout);
+      this.redireccionCorteTimeout = null;
+    }
+  }
+
+  private redirigirDashboardMain(): void {
+    this.limpiarRedireccionPostCorte();
+    this.router.navigate(['/dashboard']);
+  }
+
+  private extraerNombreArchivo(contentDisposition: string): string | null {
+    const utfMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+    if (utfMatch?.[1]) {
+      return decodeURIComponent(utfMatch[1]);
+    }
+
+    const asciiMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+    if (asciiMatch?.[1]) {
+      return asciiMatch[1];
+    }
+
+    return null;
   }
 }

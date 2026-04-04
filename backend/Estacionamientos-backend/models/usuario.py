@@ -16,4 +16,5 @@ class Usuario(Base):
     comision: Mapped[float] = mapped_column(DECIMAL(5, 2), default=0.00)
     rol: Mapped[str | None] = mapped_column(Text)
     observaciones: Mapped[str | None] = mapped_column(String(100))
+    email: Mapped[str | None] = mapped_column(String(255))
     updated_at: Mapped[datetime | None] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=True)

@@ -6,6 +6,13 @@ import { AlertService } from '../core/services/alert';
 import { AuthService } from '../services/auth.service';
 import { catchError, map, of, switchMap } from 'rxjs';
 
+type MiTurnoEstado = 'sin-turno' | 'abierto' | 'pendiente-corte';
+type MiTurnoResponse = {
+  estado: MiTurnoEstado;
+  turno_id?: number;
+  hora_apertura?: string;
+};
+
 export const corteCajaGuard: CanActivateFn = () => {
   const http = inject(HttpClient);
   const router = inject(Router);
@@ -21,16 +28,16 @@ export const corteCajaGuard: CanActivateFn = () => {
         return of(router.createUrlTree(['/dashboard']));
       }
 
-      return http.get<{ abierto: boolean }>(
+      return http.get<MiTurnoResponse>(
         `${configService.apiUrl}/turnos/mi-turno`
       ).pipe(
         map(response => {
 
-          if (response.abierto === true) {
+          if (response.estado === 'abierto' || response.estado === 'pendiente-corte') {
             return true;
           }
 
-          alertService.error('No hay turno abierto');
+          alertService.error('No hay turno abierto o pendiente para corte de caja');
           return router.createUrlTree(['/dashboard']);
         })
       );

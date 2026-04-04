@@ -25,6 +25,8 @@ export class GlobalAlert {
     'reset-password-step2': 'assets/alerts/secure.svg',
     'pending-messages': 'assets/alerts/interrogation.svg',
     'payment-method-select': 'assets/alerts/interrogation.svg',
+    'corte-caja-preview': 'assets/alerts/confirm.svg',
+    'corte-caja-status': 'assets/alerts/success.svg',
   };
 
   mostrarNuevaPass = signal(false);
@@ -48,7 +50,63 @@ export class GlobalAlert {
     return !!(a?.inputValue && a?.inputValue2 && a.inputValue === a.inputValue2);
   }
 
+  isCorteCajaPreviewInputValid(alert: AlertMessage | null | undefined): boolean {
+    const totalDeclarado = Number(alert?.inputValue ?? '');
+    return Number.isFinite(totalDeclarado) && totalDeclarado >= 0;
+  }
+
+  getCorteCajaPreviewInputValue(alert: AlertMessage | null | undefined): number {
+    return Number(alert?.inputValue ?? 0);
+  }
+
+  getCorteCajaPreviewTotalGeneral(alert: AlertMessage | null | undefined): number {
+    return Number(alert?.data?.totalGeneral ?? 0);
+  }
+
+  getCorteCajaPreviewTotalDeclarado(alert: AlertMessage | null | undefined): number {
+    return Number(alert?.data?.totalDeclarado ?? alert?.inputValue ?? 0);
+  }
+
+  getCorteCajaPreviewDifference(alert: AlertMessage | null | undefined): number {
+    return this.getCorteCajaPreviewTotalDeclarado(alert) - this.getCorteCajaPreviewTotalGeneral(alert);
+  }
+
+  getCorteCajaPreviewDifferenceLabel(alert: AlertMessage | null | undefined): string {
+    const difference = this.getCorteCajaPreviewDifference(alert);
+
+    if (difference === 0) {
+      return 'Corte cuadrado';
+    }
+
+    if (difference > 0) {
+      return 'Sobra dinero';
+    }
+
+    return 'Falta dinero';
+  }
+
+  formatCurrency(value: number | string | null | undefined): string {
+    const numberValue = Number(value ?? 0);
+    return new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Number.isFinite(numberValue) ? numberValue : 0);
+  }
+
   getAlertIconPath(type: AlertMessage['type']): string {
+    if (type === 'corte-caja-status') {
+      const stage = this.alertService.alertState()?.data?.stage;
+      if (stage === 'error') {
+        return 'assets/alerts/error.svg';
+      }
+      if (stage === 'processing') {
+        return 'assets/alerts/interrogation.svg';
+      }
+      return 'assets/alerts/success.svg';
+    }
+
     return this.alertIconByType[type] ?? 'assets/alerts/info.svg';
   }
 
@@ -69,5 +127,60 @@ export class GlobalAlert {
   toggleNuevaPass() { this.mostrarNuevaPass.update(v => !v); }
   toggleConfirmarNuevaPass() { this.mostrarConfirmarNuevaPass.update(v => !v); }
   toggleAdminPass() { this.mostrarAdminPass.update(v => !v); }
+
+  formatAlertDate(value: string | undefined | null): string {
+    if (!value) return '';
+
+    const parsed = this.parseDateValue(value);
+    if (!parsed) return value;
+
+    const day = String(parsed.getDate()).padStart(2, '0');
+    const month = new Intl.DateTimeFormat('es-MX', { month: 'long' }).format(parsed);
+    const year = parsed.getFullYear();
+
+    return `${day} de ${month}, ${year}`;
+  }
+
+  formatAlertTime(value: string | undefined | null): string {
+    if (!value) return '';
+
+    const timeOnlyMatch = value.trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?$/);
+    if (timeOnlyMatch) {
+      const [, hourRaw, minute, secondRaw] = timeOnlyMatch;
+      const hour24 = Number(hourRaw);
+      if (!Number.isInteger(hour24) || hour24 < 0 || hour24 > 23) return value;
+
+      const second = secondRaw ?? '00';
+      const hour12 = hour24 % 12 || 12;
+      const suffix = hour24 >= 12 ? 'pm' : 'am';
+
+      return `${String(hour12).padStart(2, '0')}:${minute}:${second} ${suffix}`;
+    }
+
+    const parsedDateTime = this.parseDateValue(value);
+    if (!parsedDateTime) return value;
+
+    const hour24 = parsedDateTime.getHours();
+    const minute = String(parsedDateTime.getMinutes()).padStart(2, '0');
+    const second = String(parsedDateTime.getSeconds()).padStart(2, '0');
+    const hour12 = hour24 % 12 || 12;
+    const suffix = hour24 >= 12 ? 'pm' : 'am';
+
+    return `${String(hour12).padStart(2, '0')}:${minute}:${second} ${suffix}`;
+  }
+
+  private parseDateValue(value: string): Date | null {
+    const dateOnlyMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (dateOnlyMatch) {
+      const year = Number(dateOnlyMatch[1]);
+      const month = Number(dateOnlyMatch[2]);
+      const day = Number(dateOnlyMatch[3]);
+      const parsedDate = new Date(year, month - 1, day);
+      return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+    }
+
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
 
 }

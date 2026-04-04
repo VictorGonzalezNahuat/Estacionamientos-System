@@ -7,6 +7,10 @@ from core.config import (
     update_database_config,
     update_other_config,
 )
+from core.cortes_config import (
+    get_public_cortes_config_values,
+    update_cortes_config_values,
+)
 from core.sync_scheduler import start_sync_scheduler, stop_sync_scheduler
 from core.security import get_user_admin
 from models.usuario import Usuario
@@ -15,6 +19,8 @@ from schemas.configuracion import (
     ConfiguracionUpdate,
     DatabaseConfigUpdate,
     OtherConfigUpdate,
+    CortesConfiguracionResponse,
+    CortesConfiguracionUpdate,
 )
 
 
@@ -88,5 +94,29 @@ async def editar_configuracion_completa(
                 start_sync_scheduler()
 
         return updated
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/cortes", response_model=CortesConfiguracionResponse)
+def obtener_configuracion_cortes(current_user: Usuario = Depends(get_user_admin)):
+    """Obtiene la configuracion de envios de cortes por email."""
+    return get_public_cortes_config_values()
+
+
+@router.patch("/cortes", response_model=CortesConfiguracionResponse)
+def editar_configuracion_cortes(
+    cambios: CortesConfiguracionUpdate,
+    current_user: Usuario = Depends(get_user_admin),
+):
+    """Actualiza parcialmente la configuracion de envios de cortes por email."""
+    payload = cambios.model_dump(exclude_unset=True)
+    try:
+        updated = update_cortes_config_values(payload)
+        return {
+            key: value
+            for key, value in updated.items()
+            if key != "SMTP_PASSWORD"
+        }
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

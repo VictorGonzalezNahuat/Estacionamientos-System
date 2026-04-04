@@ -1,5 +1,5 @@
 from datetime import date, time
-from typing import Optional
+from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 class TurnoCreate(BaseModel):
@@ -16,4 +16,10 @@ class TurnoResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class MiTurnoResponse(BaseModel):
+    estado: Literal["sin-turno", "abierto", "pendiente-corte"]
+    turno_id: Optional[int] = None
+    hora_apertura: Optional[time] = None
 

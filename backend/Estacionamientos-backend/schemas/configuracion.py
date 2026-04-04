@@ -11,6 +11,8 @@ class ConfiguracionResponse(BaseModel):
     MOBILE_PRINT: bool
     ENTRY_TICKET_CODE_TYPE: str
     PUBLIC_STATUS_BASE_URL: str
+    AVISO_ENTRADA: str
+    AVISO_SALIDA: str
 
 
 class DatabaseConfigUpdate(BaseModel):
@@ -41,6 +43,8 @@ class OtherConfigUpdate(BaseModel):
     MOBILE_PRINT: bool | None = None
     ENTRY_TICKET_CODE_TYPE: str | None = None
     PUBLIC_STATUS_BASE_URL: str | None = Field(None, min_length=1)
+    AVISO_ENTRADA: str | None = None
+    AVISO_SALIDA: str | None = None
 
     @field_validator("PUBLIC_STATUS_BASE_URL")
     @classmethod
@@ -59,6 +63,13 @@ class OtherConfigUpdate(BaseModel):
             raise ValueError("ENTRY_TICKET_CODE_TYPE debe ser BARCODE o QR")
         return mode
 
+    @field_validator("AVISO_ENTRADA", "AVISO_SALIDA")
+    @classmethod
+    def normalize_notice_text(cls, value):
+        if value is None:
+            return None
+        return value.replace("\r\n", "\n").replace("\r", "\n").strip()
+
 
 class ConfiguracionUpdate(BaseModel):
     """Schema deprecado - mantener para retrocompatibilidad"""
@@ -72,6 +83,8 @@ class ConfiguracionUpdate(BaseModel):
     MOBILE_PRINT: bool
     ENTRY_TICKET_CODE_TYPE: str
     PUBLIC_STATUS_BASE_URL: str = Field(min_length=1)
+    AVISO_ENTRADA: str = ""
+    AVISO_SALIDA: str = ""
 
     @field_validator(
         "DATABASE_CLOUD_USER",
@@ -93,3 +106,44 @@ class ConfiguracionUpdate(BaseModel):
         if mode not in {"BARCODE", "QR"}:
             raise ValueError("ENTRY_TICKET_CODE_TYPE debe ser BARCODE o QR")
         return mode
+
+    @field_validator("AVISO_ENTRADA", "AVISO_SALIDA")
+    @classmethod
+    def normalize_notice_text(cls, value):
+        return value.replace("\r\n", "\n").replace("\r", "\n").strip()
+
+
+class CortesConfiguracionResponse(BaseModel):
+    AUTOSEND_REPORT: bool
+    SMTP_HOST: str
+    SMTP_PORT: int
+    SMTP_USERNAME: str
+    SMTP_USE_TLS: bool
+    SMTP_TIMEOUT_SECONDS: int
+    REPORT_FROM_NAME: str
+    REPORT_SUBJECT_TEMPLATE: str
+
+
+class CortesConfiguracionUpdate(BaseModel):
+    AUTOSEND_REPORT: bool | None = None
+    SMTP_HOST: str | None = None
+    SMTP_PORT: int | None = Field(None, ge=1, le=65535)
+    SMTP_USERNAME: str | None = None
+    SMTP_PASSWORD: str | None = None
+    SMTP_USE_TLS: bool | None = None
+    SMTP_TIMEOUT_SECONDS: int | None = Field(None, ge=1)
+    REPORT_FROM_NAME: str | None = None
+    REPORT_SUBJECT_TEMPLATE: str | None = None
+
+    @field_validator(
+        "SMTP_HOST",
+        "SMTP_USERNAME",
+        "SMTP_PASSWORD",
+        "REPORT_FROM_NAME",
+        "REPORT_SUBJECT_TEMPLATE",
+    )
+    @classmethod
+    def normalize_optional_text(cls, value):
+        if value is None:
+            return None
+        return value.strip()

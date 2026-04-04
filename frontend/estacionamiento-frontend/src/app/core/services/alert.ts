@@ -2,7 +2,7 @@ import { Injectable, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
 
 export interface AlertMessage {
-  type: 'success' | 'error' | 'info' | 'confirm' | 'session-restart' | 'password-input' | 'reset-password-step1' | 'reset-password-step2' | 'pending-messages' | 'payment-method-select';
+  type: 'success' | 'error' | 'info' | 'confirm' | 'session-restart' | 'password-input' | 'reset-password-step1' | 'reset-password-step2' | 'pending-messages' | 'payment-method-select' | 'corte-caja-preview' | 'corte-caja-status';
   message?: string;
 
   // NUEVO
@@ -19,6 +19,24 @@ export interface AlertMessage {
   inputValue2?: string;
 }
 
+export interface CorteCajaPreviewData {
+  turnoId: number;
+  totalGeneral: number;
+  totalEfectivo: number;
+  totalTarjeta: number;
+  registros: number;
+  fecha?: string;
+  encargado?: string;
+  totalDeclarado?: number;
+  diferencia?: number;
+  stage: 'input' | 'preview';
+}
+
+export interface CorteCajaStatusData {
+  stage: 'processing' | 'success' | 'error';
+  corteId?: number;
+}
+
 
 @Injectable({
   providedIn: 'root'
@@ -32,8 +50,10 @@ export class AlertService {
   private paymentMethodResolve: ((value: 'efectivo' | 'tarjeta' | null) => void) | null = null;
   private passwordResolve: ((value: string | null) => void) | null = null;
   private resetPasswordResolve: ((value: { nueva: string; admin: string } | null) => void) | null = null;
+  private corteCajaPreviewResolve: ((value: number | null) => void) | null = null;
   private _resetNuevaPassword = '';
   private _resetMessageTitle = '';
+  private _corteCajaTotalDeclarado = 0;
 
   success(message: string, onClose?: () => void) {
     this.show({ type: 'success', message, onClose });
@@ -148,6 +168,65 @@ export class AlertService {
     });
   }
 
+  requestCorteCajaPreview(data: Omit<CorteCajaPreviewData, 'stage' | 'totalDeclarado' | 'diferencia'>): Promise<number | null> {
+    return new Promise((resolve) => {
+      this.corteCajaPreviewResolve = resolve;
+      this._corteCajaTotalDeclarado = 0;
+      this.show({
+        type: 'corte-caja-preview',
+        title: 'Previsualización del corte',
+        message: 'Ingresa el total declarado para revisar el corte antes de enviarlo al backend.',
+        data: {
+          ...data,
+          stage: 'input',
+        },
+        inputValue: '',
+        confirmText: 'Continuar',
+        cancelText: 'Cancelar',
+        persistent: true,
+      });
+    });
+  }
+
+  showCorteCajaProcessing(): void {
+    this.show({
+      type: 'corte-caja-status',
+      title: 'Procesando corte',
+      message: 'Espera un momento, estamos realizando el corte de caja.',
+      data: { stage: 'processing' } satisfies CorteCajaStatusData,
+      persistent: true,
+    });
+  }
+
+  showCorteCajaSuccess(
+    corteId: number,
+    onDownload: () => void | Promise<void>,
+    onClose?: () => void
+  ): void {
+    this.show({
+      type: 'corte-caja-status',
+      title: 'Corte realizado correctamente',
+      message: 'El corte se guardo correctamente. Puedes descargar el reporte en PDF.',
+      data: { stage: 'success', corteId } satisfies CorteCajaStatusData,
+      confirmText: 'Descargar PDF',
+      cancelText: 'Cerrar',
+      onConfirm: onDownload,
+      onClose,
+      persistent: true,
+    });
+  }
+
+  showCorteCajaError(message: string): void {
+    this.show({
+      type: 'corte-caja-status',
+      title: 'No se pudo completar el corte',
+      message,
+      data: { stage: 'error' } satisfies CorteCajaStatusData,
+      cancelText: 'Cerrar',
+      persistent: true,
+    });
+  }
+
   handleResetGoStep2(): void {
     const state = this.alertState();
     if (!state) return;
@@ -187,6 +266,94 @@ export class AlertService {
       this.resetPasswordResolve = null;
     }
     this._resetNuevaPassword = '';
+    this.close();
+  }
+
+  handleCorteCajaPreviewContinue(): void {
+    const state = this.alertState();
+    if (!state || state.type !== 'corte-caja-preview') {
+      return;
+    }
+
+    const totalDeclarado = Number(state.inputValue ?? '');
+    if (!Number.isFinite(totalDeclarado) || totalDeclarado < 0) {
+      return;
+    }
+
+    this._corteCajaTotalDeclarado = totalDeclarado;
+
+    const totalGeneral = Number(state.data?.totalGeneral ?? 0);
+    this.show({
+      ...state,
+      message: 'Revisa el resumen final del corte antes de confirmar.',
+      data: {
+        ...state.data,
+        stage: 'preview',
+        totalDeclarado,
+        diferencia: totalDeclarado - totalGeneral,
+      },
+      confirmText: 'Aceptar',
+      secondaryText: 'Editar total',
+    });
+  }
+
+  handleCorteCajaPreviewBack(): void {
+    const state = this.alertState();
+    if (!state || state.type !== 'corte-caja-preview') {
+      return;
+    }
+
+    this.show({
+      ...state,
+      message: 'Ingresa el total declarado para revisar el corte antes de enviarlo al backend.',
+      data: {
+        ...state.data,
+        stage: 'input',
+      },
+      confirmText: 'Continuar',
+      secondaryText: undefined,
+    });
+  }
+
+  handleCorteCajaPreviewConfirm(): void {
+    if (this.corteCajaPreviewResolve) {
+      this.corteCajaPreviewResolve(this._corteCajaTotalDeclarado);
+      this.corteCajaPreviewResolve = null;
+    }
+    this._corteCajaTotalDeclarado = 0;
+    this.showCorteCajaProcessing();
+  }
+
+  handleCorteCajaPreviewCancel(): void {
+    if (this.corteCajaPreviewResolve) {
+      this.corteCajaPreviewResolve(null);
+      this.corteCajaPreviewResolve = null;
+    }
+    this._corteCajaTotalDeclarado = 0;
+    this.close();
+  }
+
+  async handleCorteCajaStatusDownload(): Promise<void> {
+    const currentAlert = this.alertState();
+    if (!currentAlert || currentAlert.type !== 'corte-caja-status' || !currentAlert.onConfirm) {
+      return;
+    }
+
+    try {
+      const result = await currentAlert.onConfirm();
+      if (result === false) {
+        return;
+      }
+    } catch (error) {
+      console.error('Error descargando el reporte de corte:', error);
+      this.show({
+        ...currentAlert,
+        message: 'No se pudo descargar el PDF del corte. Intenta nuevamente.',
+      });
+    }
+  }
+
+  handleCorteCajaStatusClose(): void {
     this.close();
   }
 
@@ -245,6 +412,11 @@ export class AlertService {
   close() {
     const currentAlert = this.alertState();
     this.alertState.set(null);
+    if (currentAlert?.type === 'corte-caja-preview' && this.corteCajaPreviewResolve) {
+      this.corteCajaPreviewResolve(null);
+      this.corteCajaPreviewResolve = null;
+      this._corteCajaTotalDeclarado = 0;
+    }
     currentAlert?.onClose?.();
   }
 

@@ -13,6 +13,8 @@ export interface SystemConfigResponse {
   SYNC_INTERVAL_MINUTES: number;
   ENTRY_TICKET_CODE_TYPE: string;
   PUBLIC_STATUS_BASE_URL: string;
+  AVISO_ENTRADA: string;
+  AVISO_SALIDA: string;
 }
 
 export interface GeneralConfigUpdate {
@@ -21,6 +23,8 @@ export interface GeneralConfigUpdate {
   SYNC_INTERVAL_MINUTES?: number;
   ENTRY_TICKET_CODE_TYPE?: string;
   PUBLIC_STATUS_BASE_URL?: string;
+  AVISO_ENTRADA?: string;
+  AVISO_SALIDA?: string;
 }
 
 export interface DatabaseConfigUpdate {
@@ -32,6 +36,21 @@ export interface DatabaseConfigUpdate {
 }
 
 export interface SystemConfigUpdate extends GeneralConfigUpdate, DatabaseConfigUpdate {}
+
+export interface CortesConfigResponse {
+  AUTOSEND_REPORT: boolean;
+  SMTP_HOST: string;
+  SMTP_PORT: number;
+  SMTP_USERNAME: string;
+  SMTP_USE_TLS: boolean;
+  SMTP_TIMEOUT_SECONDS: number;
+  REPORT_FROM_NAME: string;
+  REPORT_SUBJECT_TEMPLATE: string;
+}
+
+export interface CortesConfigUpdate extends CortesConfigResponse {
+  SMTP_PASSWORD: string;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -75,11 +94,11 @@ export class ConfigService {
 
   // Métodos para la configuración del sistema
   getSystemConfig(): Observable<SystemConfigResponse> {
-    return this.http.get<SystemConfigResponse>(`${this.apiUrl}/config/`);
+    return this.http.get<SystemConfigResponse>(`${this.apiUrl}/config`);
   }
 
   updateGeneralConfig(config: GeneralConfigUpdate): Observable<SystemConfigResponse> {
-    return this.http.patch<SystemConfigResponse>(`${this.apiUrl}/config/`, config);
+    return this.http.patch<SystemConfigResponse>(`${this.apiUrl}/config`, config);
   }
 
   updateDatabaseConfig(config: DatabaseConfigUpdate): Observable<SystemConfigResponse> {
@@ -87,6 +106,14 @@ export class ConfigService {
   }
 
   updateSystemConfig(config: SystemConfigUpdate): Observable<SystemConfigResponse> {
-    return this.http.patch<SystemConfigResponse>(`${this.apiUrl}/config/`, config);
+    return this.http.patch<SystemConfigResponse>(`${this.apiUrl}/config`, config);
+  }
+
+  getCortesConfig(): Observable<CortesConfigResponse> {
+    return this.http.get<CortesConfigResponse>(`${this.apiUrl}/config/cortes`);
+  }
+
+  updateCortesConfig(config: CortesConfigUpdate): Observable<CortesConfigResponse> {
+    return this.http.patch<CortesConfigResponse>(`${this.apiUrl}/config/cortes`, config);
   }
 }

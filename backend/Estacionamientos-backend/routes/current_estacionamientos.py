@@ -1,75 +1,21 @@
-from datetime import date, datetime
-from pathlib import Path
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from core.datetime_utils import now_local_naive
 from core.security import get_current_user
+from core.parking_exit_service import registrar_salida_efectivo
+from core.parking_pricing import calcular_importe_por_minutos, calcular_minutos_estadia
+from core.parking_ticket_service import construir_ticket_entrada, guardar_ticket_bytes, imprimir_ticket_entrada
 from database import get_db
 from models.current_estacionamiento import CurrentEstacionamiento
-from models.history_estacionamiento import HistoryEstacionamiento
 from models.state_estacionamiento import StateEstacionamiento
 from models.tarifa import Tarifa
 from models.turno import Turno
 from models.usuario import Usuario
-from printer.print import generar_ticket_entrada_prueba
-from printer.print import generar_ticket_salida_prueba
-from printer.print import imprimir_ticket_red
 from schemas.current_estacionamiento import CurrentEstacionamientoCreate
 
 
 router = APIRouter()
-
-
-def _calcular_importe_por_minutos(total_minutos: int, tarifa: Tarifa):
-    importe = 0
-    minutos_restantes = total_minutos
-
-    MINUTOS_DIA = 1440
-    MINUTOS_MEDIO_DIA = 720
-    MINUTOS_HORA = 60
-    MINUTOS_FRACCION = 30
-
-    dias = minutos_restantes // MINUTOS_DIA
-    if dias > 0:
-        importe += dias * tarifa.diario
-        minutos_restantes = minutos_restantes % MINUTOS_DIA
-
-    medios_dias = minutos_restantes // MINUTOS_MEDIO_DIA
-    if medios_dias > 0:
-        importe += medios_dias * tarifa.medio_dia
-        minutos_restantes = minutos_restantes % MINUTOS_MEDIO_DIA
-
-    if minutos_restantes > 0:
-        if minutos_restantes <= MINUTOS_HORA:
-            importe += tarifa.hora
-            minutos_restantes = 0
-        else:
-            importe += tarifa.hora
-            minutos_restantes -= MINUTOS_HORA
-
-            horas_completas = minutos_restantes // MINUTOS_HORA
-            importe += horas_completas * tarifa.hora
-            minutos_restantes = minutos_restantes % MINUTOS_HORA
-
-            if minutos_restantes == 0:
-                pass
-            elif minutos_restantes <= MINUTOS_FRACCION:
-                importe += tarifa.fraccion
-            else:
-                importe += tarifa.hora
-
-    return importe
-
-
-def _calcular_minutos_estadia(fecha_entrada, hora_entrada, referencia_dt: datetime) -> int:
-    entrada = datetime.combine(fecha_entrada, hora_entrada)
-    tiempo_total = referencia_dt - entrada
-    total_segundos = tiempo_total.total_seconds()
-
-    if total_segundos < 0:
-        raise ValueError("Tiempo invalido")
-
-    return max(1, int(total_segundos / 60))
 
 
 @router.post("/ingresar")
@@ -109,7 +55,7 @@ def ingresar_auto(auto: CurrentEstacionamientoCreate, current_user: Usuario = De
 
     entrada_dt = datetime.combine(nuevo_vehiculo.fecha_entrada, nuevo_vehiculo.hora_entrada)
     placa_ticket = nuevo_vehiculo.placa.strip().upper()
-    ticket_bytes = generar_ticket_entrada_prueba(
+    ticket_bytes = construir_ticket_entrada(
         folio=f"ENT-{placa_ticket}-{entrada_dt:%Y%m%d%H%M%S}",
         placa=placa_ticket,
         fecha_entrada=entrada_dt,
@@ -117,11 +63,8 @@ def ingresar_auto(auto: CurrentEstacionamientoCreate, current_user: Usuario = De
         cajero=getattr(current_user, "nombre", "SISTEMA")
     )
 
-    tickets_dir = Path("printer") / "tickets"
-    tickets_dir.mkdir(parents=True, exist_ok=True)
-    ticket_path = tickets_dir / f"entrada_{placa_ticket}_{entrada_dt:%Y%m%d_%H%M%S}.bin"
-    ticket_path.write_bytes(ticket_bytes)
-    impreso_ok, impresion_mensaje = imprimir_ticket_red(ticket_bytes)
+    ticket_path = guardar_ticket_bytes("entrada", placa_ticket, entrada_dt, ticket_bytes)
+    impreso_ok, impresion_mensaje = imprimir_ticket_entrada(ticket_bytes)
 
     return {
         "mensaje": "Vehiculo ingresado correctamente",
@@ -150,101 +93,8 @@ def sacar_auto(
 
     if not vehiculo:
         raise HTTPException(status_code=404, detail="Vehiculo no encontrado")
-
-    tarifa = db.query(Tarifa).filter(
-        Tarifa.id == vehiculo.tarifa_id
-    ).first()
-
-    if not tarifa:
-        raise HTTPException(status_code=404, detail="Tarifa no encontrada")
-
-    # Momento real de salida (se usa el mismo valor en todo el flujo)
-    salida_dt = now_local_naive()
-    fecha_salida = salida_dt.date()
-    hora_salida = salida_dt.time()
-
-    entrada = datetime.combine(vehiculo.fecha_entrada, vehiculo.hora_entrada)
-
-    try:
-        total_minutos = _calcular_minutos_estadia(
-            vehiculo.fecha_entrada,
-            vehiculo.hora_entrada,
-            salida_dt
-        )
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Tiempo inválido")
-
-    importe = _calcular_importe_por_minutos(total_minutos, tarifa)
-    
-    #Como es salida se guarda el turno actual del usuario actual
-    turno_usuario = db.query(Turno).filter(Turno.encargado_id == current_user.id, Turno.estado == "activo").first()
-
-    if not turno_usuario:
-        raise HTTPException(status_code=404, detail="No existe turno abierto para el usuario actual")
-
-
-    # 🔹 Crear registro en historial
-    historial = HistoryEstacionamiento(
-        tarifa_id=vehiculo.tarifa_id,
-        encargado_id=vehiculo.encargado_id,
-        turno_id=turno_usuario.id,
-        fecha_entrada=vehiculo.fecha_entrada,
-        hora_entrada=vehiculo.hora_entrada,
-        fecha_salida=fecha_salida,
-        hora_salida=hora_salida,
-        placa=vehiculo.placa,
-        importe=importe
-    )
-    estacionamiento.espacios_ocupados -= 1
-
-    # 🔹 Guardar historial y eliminar de current
-    db.add(historial)
-    db.delete(vehiculo)
-    db.commit()
-
-    ticket_bytes = generar_ticket_salida_prueba(
-        folio=f"SAL-{placa}-{salida_dt:%Y%m%d%H%M%S}",
-        placa=placa,
-        fecha_entrada=entrada,
-        fecha_salida=salida_dt,
-        minutos_estadia=total_minutos,
-        total_pagado=float(importe),
-        cajero=getattr(current_user, "nombre", "SISTEMA"),
-        etiqueta="ORIGINAL"
-    )
-    ticket_copia_bytes = generar_ticket_salida_prueba(
-        folio=f"SAL-{placa}-{salida_dt:%Y%m%d%H%M%S}",
-        placa=placa,
-        fecha_entrada=entrada,
-        fecha_salida=salida_dt,
-        minutos_estadia=total_minutos,
-        total_pagado=float(importe),
-        cajero=getattr(current_user, "nombre", "SISTEMA"),
-        etiqueta="COPIA"
-    )
-
-    tickets_dir = Path("printer") / "tickets"
-    tickets_dir.mkdir(parents=True, exist_ok=True)
-    ticket_path = tickets_dir / f"salida_{placa}_{salida_dt:%Y%m%d_%H%M%S}.bin"
-    ticket_path.write_bytes(ticket_bytes)
-    impreso_original_ok, impresion_original_mensaje = imprimir_ticket_red(ticket_bytes)
-    impreso_copia_ok, impresion_copia_mensaje = imprimir_ticket_red(ticket_copia_bytes)
-    impreso_ok = impreso_original_ok and impreso_copia_ok
-    impresion_mensaje = (
-        f"Original: {impresion_original_mensaje} | "
-        f"Copia: {impresion_copia_mensaje}"
-    )
-
-    return {
-        "mensaje": "Vehiculo retirado correctamente",
-        "importe": importe,
-        "fecha_salida": fecha_salida,
-        "hora_salida": hora_salida,
-        "ticket_bin": str(ticket_path),
-        "ticket_copias": 2,
-        "ticket_impreso": impreso_ok,
-        "impresion_mensaje": impresion_mensaje
-    }
+    resultado = registrar_salida_efectivo(db, current_user, placa)
+    return resultado.to_dict()
 
 @router.get("/estacionados")
 def obtener_estacionados(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -265,12 +115,12 @@ def obtener_estacionados(current_user: Usuario = Depends(get_current_user), db: 
 
         if tarifa:
             try:
-                minutos_estadia = _calcular_minutos_estadia(
+                minutos_estadia = calcular_minutos_estadia(
                     vehiculo.fecha_entrada,
                     vehiculo.hora_entrada,
                     referencia_dt
                 )
-                monto_estimado = _calcular_importe_por_minutos(minutos_estadia, tarifa)
+                monto_estimado = calcular_importe_por_minutos(minutos_estadia, tarifa)
             except ValueError:
                 minutos_estadia = None
                 monto_estimado = None

@@ -7,6 +7,7 @@ import { tarifasGuard } from './guards/tarifas-guard';
 import { encargadosGuard } from './guards/encargados-guard';
 import { corteCajaGuard } from './guards/corte-caja-guard';
 import { configuracionGuard } from './guards/configuracion-guard';
+import { configuracionCortesGuard } from './guards/configuracion-cortes-guard';
 
 export const routes: Routes = [
   {
@@ -60,6 +61,11 @@ export const routes: Routes = [
         path: 'configuracion',
         loadComponent: () => import('./pages/dashboard/configuracion/configuracion').then(m => m.Configuracion),
         canActivate: [configuracionGuard]
+      },
+      {
+        path: 'configuracion-cortes',
+        loadComponent: () => import('./pages/dashboard/configuracion-cortes/configuracion-cortes').then(m => m.ConfiguracionCortes),
+        canActivate: [configuracionCortesGuard]
       }
 
     ]

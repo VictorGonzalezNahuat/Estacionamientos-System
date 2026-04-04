@@ -10,6 +10,7 @@ class ParsedWebhookEvent:
     lookup_field: Optional[str] = None  # "preferencia_id" | "placa"
     lookup_value: Optional[str] = None
     normalized_status: Optional[str] = None  # completado | rechazado | cancelado | pendiente
+    provider_transaction_id: Optional[str] = None
     event_payload: Optional[Dict] = None
 
 

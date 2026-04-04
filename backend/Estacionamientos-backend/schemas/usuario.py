@@ -14,6 +14,7 @@ class UsuarioBase(BaseModel):
     comision: Optional[float] = 0.0
     rol: UserRoles | None = None
     observaciones: Optional[str] = None
+    email: Optional[str] = None
 
 
 class UsuarioCreate(UsuarioBase):

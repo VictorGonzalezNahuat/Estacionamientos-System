@@ -20,6 +20,7 @@ class PaymentTransactionCreate(BaseModel):
 class PaymentTransactionResponse(BaseModel):
     id: int
     preferencia_id: str
+    payment_intent: Optional[str] = None
     placa: str
     monto: float
     estado: str
@@ -56,6 +57,7 @@ class SalirTarjetaResponse(BaseModel):
 
 class PagoEstadoDetalleResponse(BaseModel):
     preferencia_id: str
+    payment_intent: Optional[str] = None
     placa: str
     estado_transaccion: str
     transaccion_exitosa: bool

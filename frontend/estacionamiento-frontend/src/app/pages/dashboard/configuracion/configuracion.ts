@@ -23,6 +23,14 @@ export class Configuracion implements OnInit {
   isLoading = true;
   isSavingDatabase = false;
   isSavingGeneral = false;
+  isPublicStatusUrlVisible = false;
+  dbFieldVisibility: Record<string, boolean> = {
+    DATABASE_CLOUD_USER: false,
+    DATABASE_CLOUD_PASSWORD: false,
+    DATABASE_CLOUD_HOST: false,
+    DATABASE_CLOUD_PORT: false,
+    DATABASE_CLOUD_NAME: false,
+  };
 
   ngOnInit() {
     this.initializeForm();
@@ -37,6 +45,8 @@ export class Configuracion implements OnInit {
       SYNC_INTERVAL_MINUTES: [1, [Validators.min(1)]],
       ENTRY_TICKET_CODE_TYPE: [''],
       PUBLIC_STATUS_BASE_URL: [''],
+      AVISO_ENTRADA: [''],
+      AVISO_SALIDA: [''],
       // Configuración de Base de Datos (PATCH /base-datos) - todos opcionales
       DATABASE_CLOUD_USER: [''],
       DATABASE_CLOUD_PASSWORD: [''],
@@ -50,8 +60,13 @@ export class Configuracion implements OnInit {
     this.isLoading = true;
     this.configService.getSystemConfig().subscribe({
       next: (config: SystemConfigResponse) => {
+        const avisoEntrada = this.fromApiNewlines(config.AVISO_ENTRADA);
+        const avisoSalida = this.fromApiNewlines(config.AVISO_SALIDA);
+
         this.configForm.patchValue({
           ...config,
+          AVISO_ENTRADA: avisoEntrada,
+          AVISO_SALIDA: avisoSalida,
           DATABASE_CLOUD_PASSWORD: ''
         });
         this.isLoading = false;
@@ -99,18 +114,29 @@ export class Configuracion implements OnInit {
     this.isSavingDatabase = true;
     
     try {
+      const databasePort = Number(this.configForm.get('DATABASE_CLOUD_PORT')?.value);
+      if (!Number.isFinite(databasePort) || databasePort < 1) {
+        this.alertService.error('El puerto de Base de Datos debe ser un número mayor a 0');
+        this.isSavingDatabase = false;
+        return;
+      }
+
       const databaseChanges: DatabaseConfigUpdate = {
         DATABASE_CLOUD_USER: this.configForm.get('DATABASE_CLOUD_USER')?.value,
         DATABASE_CLOUD_PASSWORD: this.configForm.get('DATABASE_CLOUD_PASSWORD')?.value,
         DATABASE_CLOUD_HOST: this.configForm.get('DATABASE_CLOUD_HOST')?.value,
-        DATABASE_CLOUD_PORT: this.configForm.get('DATABASE_CLOUD_PORT')?.value,
+        DATABASE_CLOUD_PORT: databasePort,
         DATABASE_CLOUD_NAME: this.configForm.get('DATABASE_CLOUD_NAME')?.value,
       };
 
       const response = await firstValueFrom(this.configService.updateDatabaseConfig(databaseChanges));
+      const avisoEntrada = this.fromApiNewlines(response.AVISO_ENTRADA);
+      const avisoSalida = this.fromApiNewlines(response.AVISO_SALIDA);
       
       this.configForm.patchValue({
         ...response,
+        AVISO_ENTRADA: avisoEntrada,
+        AVISO_SALIDA: avisoSalida,
         DATABASE_CLOUD_PASSWORD: ''
       });
 
@@ -162,11 +188,17 @@ export class Configuracion implements OnInit {
         SYNC_INTERVAL_MINUTES: this.configForm.get('SYNC_INTERVAL_MINUTES')?.value,
         ENTRY_TICKET_CODE_TYPE: this.configForm.get('ENTRY_TICKET_CODE_TYPE')?.value,
         PUBLIC_STATUS_BASE_URL: this.configForm.get('PUBLIC_STATUS_BASE_URL')?.value,
+        AVISO_ENTRADA: this.toApiNewlines(this.configForm.get('AVISO_ENTRADA')?.value),
+        AVISO_SALIDA: this.toApiNewlines(this.configForm.get('AVISO_SALIDA')?.value),
       };
 
       const response = await firstValueFrom(this.configService.updateGeneralConfig(generalChanges));
-      
-      this.configForm.patchValue(response);
+
+      this.configForm.patchValue({
+        ...response,
+        AVISO_ENTRADA: this.fromApiNewlines(response.AVISO_ENTRADA),
+        AVISO_SALIDA: this.fromApiNewlines(response.AVISO_SALIDA),
+      });
 
       this.alertService.success('Configuración General actualizada exitosamente');
       this.isSavingGeneral = false;
@@ -178,11 +210,14 @@ export class Configuracion implements OnInit {
   }
 
   isDatabaseFormValid(): boolean {
-    const dbFields = ['DATABASE_CLOUD_USER', 'DATABASE_CLOUD_PASSWORD', 'DATABASE_CLOUD_HOST', 'DATABASE_CLOUD_PORT', 'DATABASE_CLOUD_NAME'];
-    return dbFields.every(field => {
+    const dbFields = ['DATABASE_CLOUD_USER', 'DATABASE_CLOUD_PASSWORD', 'DATABASE_CLOUD_HOST', 'DATABASE_CLOUD_NAME'];
+    const allFieldsWithValue = dbFields.every(field => {
       const value = this.configForm.get(field)?.value;
       return value !== null && value !== undefined && String(value).trim() !== '';
     });
+
+    const databasePort = Number(this.configForm.get('DATABASE_CLOUD_PORT')?.value);
+    return allFieldsWithValue && Number.isFinite(databasePort) && databasePort > 0;
   }
 
   isGeneralFormValid(): boolean {
@@ -195,5 +230,33 @@ export class Configuracion implements OnInit {
 
   onReset() {
     this.loadConfig();
+  }
+
+  toggleDbFieldVisibility(fieldName: string) {
+    this.dbFieldVisibility[fieldName] = !this.dbFieldVisibility[fieldName];
+  }
+
+  isDbFieldVisible(fieldName: string): boolean {
+    return Boolean(this.dbFieldVisibility[fieldName]);
+  }
+
+  togglePublicStatusUrlVisibility() {
+    this.isPublicStatusUrlVisible = !this.isPublicStatusUrlVisible;
+  }
+
+  private toApiNewlines(value: unknown): string {
+    if (value === null || value === undefined) {
+      return '';
+    }
+
+    return String(value).replace(/\r?\n/g, '\\n');
+  }
+
+  private fromApiNewlines(value: unknown): string {
+    if (value === null || value === undefined) {
+      return '';
+    }
+
+    return String(value).replace(/\\n/g, '\n');
   }
 }
