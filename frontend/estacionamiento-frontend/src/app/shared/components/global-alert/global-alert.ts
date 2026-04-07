@@ -28,6 +28,7 @@ export class GlobalAlert {
     'corte-caja-preview': 'assets/alerts/confirm.svg',
     'corte-caja-status': 'assets/alerts/success.svg',
     'fiscal-customer-input': 'assets/alerts/secure.svg',
+    'facturacion-ticket-input': 'assets/alerts/secure.svg',
   };
 
   mostrarNuevaPass = signal(false);
@@ -155,6 +156,29 @@ export class GlobalAlert {
       && Number.isFinite(historyId)
       && historyId > 0
       && emailValido
+    );
+  }
+
+  isFacturacionTicketInputValid(alert: AlertMessage | null | undefined): boolean {
+    const form = alert?.data?.form;
+    if (!form) {
+      return false;
+    }
+
+    const fechaValida = /^\d{4}-\d{2}-\d{2}$/.test(String(form.fecha_salida ?? '').trim());
+    const horaValida = /^\d{2}:\d{2}(:\d{2})?$/.test(String(form.hora_salida ?? '').trim());
+    const importe = Number(form.importe);
+    const historyId = Number(form.history_estacionamiento_id);
+    const placa = String(form.placa ?? '').trim();
+
+    return (
+      placa.length > 0
+      && fechaValida
+      && horaValida
+      && Number.isFinite(importe)
+      && importe > 0
+      && Number.isFinite(historyId)
+      && historyId > 0
     );
   }
 

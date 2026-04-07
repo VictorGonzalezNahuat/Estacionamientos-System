@@ -67,3 +67,18 @@ class PagoEstadoDetalleResponse(BaseModel):
     metodo_pago: Optional[str] = None
     importe: Optional[float] = None
     webhook_timestamp: Optional[datetime] = None
+
+
+class CancelarPagoRequest(BaseModel):
+    provider: Optional[Literal["stripe", "mercadopago"]] = None
+    motivo: Optional[str] = None
+
+
+class CancelarPagoResponse(BaseModel):
+    preferencia_id: str
+    estado_transaccion: str
+    cancelado_local: bool
+    cancelado_remoto: bool
+    provider: str
+    motivo: Optional[str] = None
+    detalle: Optional[str] = None

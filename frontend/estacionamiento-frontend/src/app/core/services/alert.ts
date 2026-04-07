@@ -2,7 +2,7 @@ import { Injectable, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
 
 export interface AlertMessage {
-  type: 'success' | 'error' | 'info' | 'confirm' | 'session-restart' | 'password-input' | 'reset-password-step1' | 'reset-password-step2' | 'pending-messages' | 'payment-method-select' | 'corte-caja-preview' | 'corte-caja-status' | 'fiscal-customer-input';
+  type: 'success' | 'error' | 'info' | 'confirm' | 'session-restart' | 'password-input' | 'reset-password-step1' | 'reset-password-step2' | 'pending-messages' | 'payment-method-select' | 'corte-caja-preview' | 'corte-caja-status' | 'fiscal-customer-input' | 'facturacion-ticket-input';
   message?: string;
 
   // NUEVO
@@ -53,6 +53,14 @@ export interface FiscalCustomerInputData {
   importe: string;
 }
 
+export interface FacturacionTicketInputData {
+  history_estacionamiento_id: string;
+  placa: string;
+  fecha_salida: string;
+  hora_salida: string;
+  importe: string;
+}
+
 
 @Injectable({
   providedIn: 'root'
@@ -68,6 +76,7 @@ export class AlertService {
   private resetPasswordResolve: ((value: { nueva: string; admin: string } | null) => void) | null = null;
   private corteCajaPreviewResolve: ((value: number | null) => void) | null = null;
   private fiscalCustomerInputResolve: ((value: FiscalCustomerInputData | null) => void) | null = null;
+  private facturacionTicketInputResolve: ((value: FacturacionTicketInputData | null) => void) | null = null;
   private _resetNuevaPassword = '';
   private _resetMessageTitle = '';
   private _corteCajaTotalDeclarado = 0;
@@ -216,6 +225,29 @@ export class AlertService {
           form: { ...defaults },
         },
         confirmText: 'Registrar y emitir',
+        cancelText: 'Cancelar',
+        persistent: true,
+      });
+    });
+  }
+
+  requestFacturacionTicketInput(defaults?: Partial<FacturacionTicketInputData>): Promise<FacturacionTicketInputData | null> {
+    return new Promise((resolve) => {
+      this.facturacionTicketInputResolve = resolve;
+      this.show({
+        type: 'facturacion-ticket-input',
+        title: 'Validar ticket pagado',
+        message: 'Para registrar al cliente fiscal, captura los datos del ticket pagado.',
+        data: {
+          form: {
+            history_estacionamiento_id: defaults?.history_estacionamiento_id ?? '',
+            placa: defaults?.placa ?? '',
+            fecha_salida: defaults?.fecha_salida ?? '',
+            hora_salida: defaults?.hora_salida ?? '',
+            importe: defaults?.importe ?? '',
+          } as FacturacionTicketInputData,
+        },
+        confirmText: 'Continuar registro',
         cancelText: 'Cancelar',
         persistent: true,
       });
@@ -426,6 +458,41 @@ export class AlertService {
     this.close();
   }
 
+  handleFacturacionTicketInputConfirm(): void {
+    if (!this.facturacionTicketInputResolve) {
+      this.close();
+      return;
+    }
+
+    const state = this.alertState();
+    if (!state || state.type !== 'facturacion-ticket-input') {
+      this.facturacionTicketInputResolve(null);
+      this.facturacionTicketInputResolve = null;
+      this.close();
+      return;
+    }
+
+    const form = state.data?.form as FacturacionTicketInputData | undefined;
+    if (!form) {
+      this.facturacionTicketInputResolve(null);
+      this.facturacionTicketInputResolve = null;
+      this.close();
+      return;
+    }
+
+    this.facturacionTicketInputResolve({ ...form });
+    this.facturacionTicketInputResolve = null;
+    this.close();
+  }
+
+  handleFacturacionTicketInputCancel(): void {
+    if (this.facturacionTicketInputResolve) {
+      this.facturacionTicketInputResolve(null);
+      this.facturacionTicketInputResolve = null;
+    }
+    this.close();
+  }
+
   handlePasswordConfirm(confirmed: boolean) {
     if (this.passwordResolve) {
       const passwordValue = confirmed ? this.alertState()?.inputValue || null : null;
@@ -489,6 +556,10 @@ export class AlertService {
     if (currentAlert?.type === 'fiscal-customer-input' && this.fiscalCustomerInputResolve) {
       this.fiscalCustomerInputResolve(null);
       this.fiscalCustomerInputResolve = null;
+    }
+    if (currentAlert?.type === 'facturacion-ticket-input' && this.facturacionTicketInputResolve) {
+      this.facturacionTicketInputResolve(null);
+      this.facturacionTicketInputResolve = null;
     }
     currentAlert?.onClose?.();
   }

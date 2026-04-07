@@ -3,8 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { AlertService } from '../../../core/services/alert';
-import { FacturacionService, FiscalClientCreatePayload } from '../../../services/facturacion.service';
+import { FacturacionService, FiscalClientCreatePayload, FiscalClientRegisterWithTicketPayload } from '../../../services/facturacion.service';
+import { RecaptchaService } from '../../../services/recaptcha.service';
 
 @Component({
   selector: 'app-registro-cliente',
@@ -16,6 +18,7 @@ export class RegistroCliente {
   private facturacionService = inject(FacturacionService);
   private alert = inject(AlertService);
   private router = inject(Router);
+  private recaptchaService = inject(RecaptchaService);
 
   isSubmitting = false;
 
@@ -120,7 +123,7 @@ export class RegistroCliente {
     return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`;
   }
 
-  onSubmit(formRef: NgForm): void {
+  async onSubmit(formRef: NgForm): Promise<void> {
     if (this.isSubmitting) return;
 
     if (formRef.invalid) {
@@ -128,7 +131,7 @@ export class RegistroCliente {
       return;
     }
 
-    const payload = {
+    const fiscalPayload = {
       ...this.form,
       rfc: this.normalizeRFC(this.form.rfc),
       razon_social: this.normalizeSpaces(this.form.razon_social),
@@ -142,19 +145,61 @@ export class RegistroCliente {
 
     this.isSubmitting = true;
 
-    this.facturacionService.createFiscalClient(payload).subscribe({
-      next: () => {
-        this.alert.success('Cliente fiscal registrado exitosamente', () => {
-          void this.router.navigate(['/facturacion']);
-        });
-        this.isSubmitting = false;
-      },
-      error: (err: HttpErrorResponse) => {
-        const message = this.buildApiErrorMessage(err);
-        this.alert.error(message);
-        this.isSubmitting = false;
+    try {
+      const ticketInput = await this.alert.requestFacturacionTicketInput();
+      if (!ticketInput) {
+        return;
       }
-    });
+
+      const fechaSalida = this.formatFechaForApi(ticketInput.fecha_salida);
+      const horaSalida = this.formatHoraForApi(ticketInput.hora_salida);
+      const historyId = Number(ticketInput.history_estacionamiento_id);
+      const importe = Number(ticketInput.importe);
+
+      if (!fechaSalida || !horaSalida || !Number.isFinite(historyId) || historyId <= 0 || !Number.isFinite(importe) || importe <= 0) {
+        this.alert.error('Los datos del ticket son invalidos. Verifica folio, fecha, hora e importe.');
+        return;
+      }
+
+      const recaptchaToken = await this.recaptchaService.execute('registro_cliente_fiscal');
+
+      const payload: FiscalClientRegisterWithTicketPayload = {
+        ...fiscalPayload,
+        history_estacionamiento_id: historyId,
+        placa: this.normalizePlate(ticketInput.placa),
+        fecha_salida: fechaSalida,
+        hora_salida: horaSalida,
+        importe: Number(importe.toFixed(2)),
+        recaptcha_token: recaptchaToken,
+      };
+
+      await firstValueFrom(this.facturacionService.createFiscalClientWithTicket(payload));
+
+      this.alert.success('Cliente fiscal registrado exitosamente', () => {
+        void this.router.navigate(['/facturacion']);
+      });
+    } catch (error) {
+      if (error instanceof HttpErrorResponse) {
+        if (error.status === 403) {
+          const code = error?.error?.detail?.code;
+          if (code === 'RECAPTCHA_FAILED' || code === 'RECAPTCHA_LOW_SCORE') {
+            this.alert.error('No pudimos validar la solicitud, intenta nuevamente.');
+            return;
+          }
+        }
+
+        const message = this.buildApiErrorMessage(error);
+        this.alert.error(message);
+        return;
+      }
+
+      const message = error instanceof Error
+        ? error.message
+        : 'No se pudo registrar el cliente fiscal. Verifica la informacion e intenta nuevamente.';
+      this.alert.error(message);
+    } finally {
+      this.isSubmitting = false;
+    }
   }
 
   goBack(): void {
@@ -198,6 +243,40 @@ export class RegistroCliente {
 
   private onlyDigits(value: string): string {
     return value.replace(/\D+/g, '').trim();
+  }
+
+  private normalizePlate(value: string): string {
+    return value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  }
+
+  private formatFechaForApi(value: string): string | null {
+    const input = value.trim();
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
+      return input;
+    }
+
+    const ddmmyyyy = input.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    if (ddmmyyyy) {
+      const [, day, month, year] = ddmmyyyy;
+      return `${year}-${month}-${day}`;
+    }
+
+    return null;
+  }
+
+  private formatHoraForApi(value: string): string | null {
+    const input = value.trim();
+
+    if (/^\d{2}:\d{2}:\d{2}(\.\d+Z)?$/.test(input)) {
+      return input;
+    }
+
+    if (/^\d{2}:\d{2}$/.test(input)) {
+      return `${input}:00`;
+    }
+
+    return null;
   }
 
 }

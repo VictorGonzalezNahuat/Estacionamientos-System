@@ -181,3 +181,52 @@ class StripeService:
 
     def serialize_event(self, event_data: Dict) -> str:
         return normalize_to_json(event_data)
+
+    def cancel_checkout(self, checkout_id: str) -> Dict:
+        response = requests.post(
+            f"{self.api_base_url}/checkout/sessions/{checkout_id}/expire",
+            headers={"Authorization": f"Bearer {self.secret_key}"},
+            timeout=15,
+        )
+
+        if response.status_code in (200, 201):
+            data = response.json()
+            return {
+                "supported": True,
+                "cancelled_remote": True,
+                "checkout_id": checkout_id,
+                "remote_status": data.get("status"),
+            }
+
+        # Session already expired/completed/non-open should be treated as idempotent.
+        try:
+            error_payload = response.json()
+        except ValueError:
+            error_payload = {"raw": response.text}
+
+        error_message = ""
+        if isinstance(error_payload, dict):
+            error_obj = error_payload.get("error")
+            if isinstance(error_obj, dict):
+                error_message = str(error_obj.get("message") or "")
+
+        if response.status_code == 400 and (
+            "not in an expireable state" in error_message.lower()
+            or "cannot be expired" in error_message.lower()
+        ):
+            return {
+                "supported": True,
+                "cancelled_remote": False,
+                "checkout_id": checkout_id,
+                "remote_status": "not_expireable",
+                "idempotent": True,
+                "message": error_message or "La sesion ya no esta abierta para expirar",
+            }
+
+        response.raise_for_status()
+        return {
+            "supported": True,
+            "cancelled_remote": False,
+            "checkout_id": checkout_id,
+            "remote_status": "unknown",
+        }

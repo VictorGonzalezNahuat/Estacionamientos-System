@@ -24,6 +24,21 @@ interface EstadoPagoResponse {
   webhook_timestamp?: string;
 }
 
+interface CancelarPagoRequest {
+  provider: string;
+  motivo: string;
+}
+
+interface CancelarPagoResponse {
+  preferencia_id?: string;
+  estado_transaccion?: string;
+  cancelado_local?: boolean;
+  cancelado_remoto?: boolean;
+  provider?: string;
+  motivo?: string;
+  detalle?: string;
+}
+
 interface PagoPendienteStorage {
   preferenciaId: string;
   placa: string;
@@ -74,6 +89,7 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
   checkoutQrDataUrl = signal<string | null>(null);
   qrGenerando = signal(false);
   qrVisible = signal(false);
+  cancelandoPago = signal(false);
 
 
 
@@ -341,6 +357,7 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
 
     this.preferenciaIdPendiente.set(preferenciaId);
     this.pollingEnCurso.set(true);
+    this.cancelandoPago.set(false);
 
     this.consultarEstadoPago(preferenciaId);
 
@@ -501,6 +518,7 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
     this.checkoutUrlPendiente.set(null);
     this.checkoutQrDataUrl.set(null);
     this.qrVisible.set(false);
+    this.cancelandoPago.set(false);
   }
 
   ocultarQrPago() {
@@ -520,6 +538,64 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
     } catch {
       this.alert.error('No se pudo copiar el link de pago.');
     }
+  }
+
+  async cancelarPagoEnLinea() {
+    const preferenciaId = this.preferenciaIdPendiente();
+    if (!preferenciaId || this.cancelandoPago()) {
+      return;
+    }
+
+    const confirmar = await this.alert.confirm(
+      'Esto cancelara la transaccion en linea y detendra la consulta del estado. ¿Deseas continuar?',
+      'Cancelar pago en linea',
+      'Si, cancelar pago',
+      'Seguir esperando'
+    );
+
+    if (!confirmar) {
+      return;
+    }
+
+    this.cancelandoPago.set(true);
+    this.detenerPollingPago();
+
+    const placa = this.placaPendientePago() || 'N/D';
+    const payload: CancelarPagoRequest = {
+      provider: 'stripe',
+      motivo: `Cancelado por operador en Entradas/Salidas. Placa: ${placa}`,
+    };
+
+    this.http.post<CancelarPagoResponse>(
+      `${this.config.apiUrl}/pagos/cancelar/${encodeURIComponent(preferenciaId)}`,
+      payload
+    ).subscribe({
+      next: (res) => {
+        const canceladoLocal = res?.cancelado_local === true;
+        const canceladoRemoto = res?.cancelado_remoto === true;
+        const detalle = res?.detalle?.trim();
+
+        if (canceladoLocal && canceladoRemoto) {
+          this.alert.success(detalle || 'Pago en linea cancelado correctamente.', () => this.focusAndSelectPlaca());
+        } else if (canceladoLocal || canceladoRemoto) {
+          this.alert.info(
+            detalle || 'La cancelacion fue parcial. Verifica el estado final de la transaccion.',
+            res
+          );
+        } else {
+          this.alert.error(detalle || 'No fue posible cancelar la transaccion en linea.');
+        }
+
+        this.limpiarPagoPendiente();
+        this.loading.set(false);
+        this.cancelandoPago.set(false);
+      },
+      error: () => {
+        this.cancelandoPago.set(false);
+        this.loading.set(false);
+        this.alert.error('No se pudo cancelar el pago en linea.');
+      }
+    });
   }
 
   private mostrarQrPago(checkoutUrl: string) {

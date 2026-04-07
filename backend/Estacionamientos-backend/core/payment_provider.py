@@ -29,6 +29,9 @@ class PaymentProvider(Protocol):
     def serialize_event(self, event_data: Dict) -> str:
         ...
 
+    def cancel_checkout(self, checkout_id: str) -> Dict:
+        ...
+
 
 _provider_instances: Dict[str, PaymentProvider] = {}
 

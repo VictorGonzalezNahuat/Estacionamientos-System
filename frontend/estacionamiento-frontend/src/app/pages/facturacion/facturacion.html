@@ -184,7 +184,7 @@
 			<aside class="facturacion-card helper-card">
 				<div class="important-notice">
 					<p class="notice-text">
-						<strong>Importante:</strong> Asegurate de capturar exactamente los datos del ticket pagado para evitar rechazos al emitir la factura.
+						<strong>Importante:</strong> Los documentos solo podran descargarse en el mismo dispositivo, navegador y pestaña donde se emitio la factura. Descargalos en este momento para evitar perder acceso. Tambien dispondras de hasta 3 dias para la descarga siempre que no cierres la pestaña. Para evitar inconvenientes, se recomienda enviar la factura por correo.
 					</p>
 				</div>
 
@@ -212,6 +212,9 @@
 				<div class="helper-block">
 					<h3>Acciones complementarias</h3>
 					<p>Si el RFC no existe, el sistema abrira un formulario rapido para registrar y continuar automaticamente sin salir de esta pantalla.</p>
+					<button type="button" class="register-btn" [routerLink]="['/facturacion/registro-cliente']">
+						Registrar cliente fiscal
+					</button>
 					<button type="button" class="home-btn" [routerLink]="['/login']" aria-label="Volver al inicio del sistema">
 						<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
 							<path d="M12 3.2L3 10.1V21h6.6v-5.2h4.8V21H21V10.1L12 3.2zM19.4 19.4H16v-5.2H8v5.2H4.6v-8.5L12 5.2l7.4 5.7v8.5z"></path>

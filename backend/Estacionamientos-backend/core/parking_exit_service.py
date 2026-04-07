@@ -399,6 +399,16 @@ def procesar_webhook_pago(db: Session, provider, parsed: ParsedWebhookEvent) -> 
         HistoryEstacionamiento.payment_transaction_id == payment_transaction.id,
     ).first()
 
+    if payment_transaction.estado == PaymentTransaction.ESTADO_CANCELADO:
+        db.commit()
+        return {
+            "status": "ignored_cancelled",
+            "provider": provider.provider_name,
+            "lookup_field": parsed.lookup_field,
+            "lookup_value": parsed.lookup_value,
+            "transaction_status": payment_transaction.estado,
+        }
+
     if parsed.normalized_status == "completado":
         if payment_transaction.estado == PaymentTransaction.ESTADO_COMPLETADO:
             if parsed.provider_transaction_id and not payment_transaction.payment_intent:
@@ -449,4 +459,72 @@ def procesar_webhook_pago(db: Session, provider, parsed: ParsedWebhookEvent) -> 
         "lookup_field": parsed.lookup_field,
         "lookup_value": parsed.lookup_value,
         "transaction_status": payment_transaction.estado,
+    }
+
+
+def cancelar_transaccion_pago(
+    db: Session,
+    preferencia_id: str,
+    provider_name: str,
+    motivo: str | None = None,
+) -> dict:
+    from core.payment_provider import get_payment_provider
+
+    payment_transaction = db.query(PaymentTransaction).filter(
+        PaymentTransaction.preferencia_id == preferencia_id
+    ).first()
+
+    if not payment_transaction:
+        raise HTTPException(status_code=404, detail="Transaccion no encontrada")
+
+    provider = get_payment_provider(provider_name)
+    provider_normalized = getattr(provider, "provider_name", provider_name)
+
+    if payment_transaction.estado == PaymentTransaction.ESTADO_COMPLETADO:
+        raise HTTPException(status_code=409, detail="No se puede cancelar una transaccion completada")
+
+    metadata = _metadata_from_transaction(payment_transaction)
+    detalle_cancelacion = None
+    cancelado_remoto = False
+
+    if payment_transaction.estado == PaymentTransaction.ESTADO_CANCELADO:
+        existing_reason = metadata.get("cancel_reason") if isinstance(metadata, dict) else None
+        return {
+            "preferencia_id": payment_transaction.preferencia_id,
+            "estado_transaccion": payment_transaction.estado,
+            "cancelado_local": True,
+            "cancelado_remoto": bool(metadata.get("cancelled_remote", False)),
+            "provider": provider_normalized,
+            "motivo": existing_reason,
+            "detalle": "La transaccion ya estaba cancelada",
+        }
+
+    try:
+        remote_result = provider.cancel_checkout(payment_transaction.preferencia_id)
+        cancelado_remoto = bool(remote_result.get("cancelled_remote", False))
+        detalle_cancelacion = remote_result.get("message")
+    except Exception as exc:
+        # No bloquea la cancelacion local; se registra para trazabilidad.
+        detalle_cancelacion = f"No se pudo cancelar remoto: {str(exc)}"
+
+    payment_transaction.estado = PaymentTransaction.ESTADO_CANCELADO
+    metadata = {
+        **(metadata if isinstance(metadata, dict) else {}),
+        "cancelled_remote": cancelado_remoto,
+        "cancel_provider": provider_normalized,
+        "cancel_reason": motivo,
+        "cancel_detail": detalle_cancelacion,
+        "cancelled_at": datetime.utcnow().isoformat(),
+    }
+    payment_transaction.metadata_mp = PaymentTransaction.build_metadata(metadata)
+    db.commit()
+
+    return {
+        "preferencia_id": payment_transaction.preferencia_id,
+        "estado_transaccion": payment_transaction.estado,
+        "cancelado_local": True,
+        "cancelado_remoto": cancelado_remoto,
+        "provider": provider_normalized,
+        "motivo": motivo,
+        "detalle": detalle_cancelacion,
     }

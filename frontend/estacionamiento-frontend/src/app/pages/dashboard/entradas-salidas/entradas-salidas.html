@@ -179,6 +179,14 @@
             <button type="button" class="secondary-btn qr-action-btn" (click)="copiarCheckoutUrl()">
                 Copiar link
             </button>
+            <button
+                type="button"
+                class="secondary-btn qr-action-btn"
+                [disabled]="cancelandoPago() || !preferenciaIdPendiente()"
+                (click)="cancelarPagoEnLinea()"
+            >
+                {{ cancelandoPago() ? 'Cancelando pago...' : 'Cancelar pago' }}
+            </button>
             <button type="button" class="secondary-btn qr-action-btn" (click)="ocultarQrPago()">
                 Cerrar vista QR
             </button>

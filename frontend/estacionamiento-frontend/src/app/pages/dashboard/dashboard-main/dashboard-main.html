@@ -4,18 +4,63 @@
     <div class="content-card">
       <h1>LA EMPRESA S.A. DE C.V.</h1>
       <p>Desarrollado por Asesoria y Desarrollo de Sistemas</p>
+
+      <div
+        class="turno-status"
+        [class.status-open]="turnoStatusClass === 'status-open'"
+        [class.status-warning]="turnoStatusClass === 'status-warning'"
+        [class.status-closed]="turnoStatusClass === 'status-closed'"
+        [class.status-error]="turnoStatusClass === 'status-error'"
+      >
+        @if (loadingEstadoTurno()) {
+          <span>Consultando estado del turno...</span>
+        } @else {
+          <span>{{ turnoStatusText }}</span>
+        }
+      </div>
     </div>
   </main>
 
   <aside class="sidebar">
     <div class="sidebar-buttons">
-      <button class="action-btn" routerLink="apertura_turno">
-        Apertura de Turno
+      <button class="action-btn btn-apertura" routerLink="apertura_turno" title="Abrir un nuevo turno">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <span class="btn-text">Apertura de Turno</span>
       </button>
-      <button class="action-btn" routerLink="entradas_salidas">Entrada / Salida</button>
-      <button class="action-btn" routerLink="cierre_turno">Cierre de Turno</button>
-      <button class="action-btn" routerLink="corte_caja">Corte de Caja</button>
-      <button class="action-btn logout">Cerrar Sesión</button>
+      <button class="action-btn btn-movimientos" routerLink="entradas_salidas" title="Registrar entradas y salidas de vehículos">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 11l3 3L22 4"></path>
+          <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path>
+        </svg>
+        <span class="btn-text">Entrada / Salida</span>
+      </button>
+      <button class="action-btn btn-cierre" routerLink="cierre_turno" title="Cerrar el turno actual">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18.36 6.64a9 9 0 11-12.73 0"></path>
+          <polyline points="12 3 12 12 16 14"></polyline>
+        </svg>
+        <span class="btn-text">Cierre de Turno</span>
+      </button>
+      <button class="action-btn btn-corte" routerLink="corte_caja" title="Realizar corte de caja">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+          <path d="M16 5V3a1 1 0 00-1-1H9a1 1 0 00-1 1v2"></path>
+          <circle cx="9" cy="15" r="2"></circle>
+          <circle cx="15" cy="15" r="2"></circle>
+        </svg>
+        <span class="btn-text">Corte de Caja</span>
+      </button>
+      <button class="action-btn btn-logout logout" title="Cerrar sesión">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+        <span class="btn-text">Cerrar Sesión</span>
+      </button>
     </div>
   </aside>
 

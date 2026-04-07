@@ -59,6 +59,36 @@
   letter-spacing: 0.5px;
 }
 
+.turno-status {
+  margin-top: 28px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(15, 23, 42, 0.45);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.turno-status.status-open {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.45);
+}
+
+.turno-status.status-warning {
+  background: rgba(245, 158, 11, 0.22);
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+.turno-status.status-closed {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: rgba(56, 189, 248, 0.5);
+}
+
+.turno-status.status-error {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
 /* ===============================
    SIDEBAR DERECHA MEJORADA
 ================================= */
@@ -100,13 +130,29 @@
   transition: all 0.3s ease;
 
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 12px;
 
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   border-left: 4px solid rgba(37, 99, 235, 0.5);
   position: relative;
   overflow: hidden;
+}
+
+.btn-icon {
+  width: 48px;
+  height: 48px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.3s ease;
+}
+
+.btn-text {
+  font-size: 16px;
+  display: block;
+  text-align: center;
 }
 
 .action-btn::before {
@@ -131,19 +177,91 @@
   left: 0;
 }
 
+.action-btn:hover .btn-icon {
+  transform: scale(1.1);
+}
+
 .action-btn:active {
   transform: translateX(2px);
 }
 
-.logout {
-  background: rgba(239, 68, 68, 0.25);
-  border-left-color: rgba(239, 68, 68, 0.6);
+/* Colores específicos por botón */
+
+/* APERTURA DE TURNO - Verde Pastel */
+.btn-apertura {
+  background: rgba(132, 204, 176, 0.15);
+  border-left-color: rgba(132, 204, 176, 0.6);
+}
+
+.btn-apertura .btn-icon {
+  color: #84cca0;
+}
+
+.btn-apertura:hover {
+  background: rgba(132, 204, 176, 0.28);
+  box-shadow: 0 8px 20px rgba(132, 204, 176, 0.3);
+}
+
+/* ENTRADA / SALIDA - Azul Pastel */
+.btn-movimientos {
+  background: rgba(147, 197, 253, 0.15);
+  border-left-color: rgba(147, 197, 253, 0.6);
+}
+
+.btn-movimientos .btn-icon {
+  color: #93c5fd;
+}
+
+.btn-movimientos:hover {
+  background: rgba(147, 197, 253, 0.28);
+  box-shadow: 0 8px 20px rgba(147, 197, 253, 0.3);
+}
+
+/* CIERRE DE TURNO - Naranja Pastel */
+.btn-cierre {
+  background: rgba(253, 186, 116, 0.15);
+  border-left-color: rgba(253, 186, 116, 0.6);
+}
+
+.btn-cierre .btn-icon {
+  color: #fdba74;
+}
+
+.btn-cierre:hover {
+  background: rgba(253, 186, 116, 0.28);
+  box-shadow: 0 8px 20px rgba(253, 186, 116, 0.3);
+}
+
+/* CORTE DE CAJA - Púrpura Pastel */
+.btn-corte {
+  background: rgba(216, 180, 254, 0.15);
+  border-left-color: rgba(216, 180, 254, 0.6);
+}
+
+.btn-corte .btn-icon {
+  color: #d8b4fe;
+}
+
+.btn-corte:hover {
+  background: rgba(216, 180, 254, 0.28);
+  box-shadow: 0 8px 20px rgba(216, 180, 254, 0.3);
+}
+
+/* CERRAR SESIÓN - Rojo Pastel */
+.btn-logout {
+  background: rgba(252, 165, 165, 0.15);
+  border-left-color: rgba(252, 165, 165, 0.6);
+}
+
+.btn-logout .btn-icon {
+  color: #fca5a5;
 }
 
 .logout:hover {
-  background: rgba(239, 68, 68, 0.45);
-  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
+  background: rgba(252, 165, 165, 0.28);
+  box-shadow: 0 8px 20px rgba(252, 165, 165, 0.3);
 }
+
 
 /* ===============================
    ANIMACIÓN

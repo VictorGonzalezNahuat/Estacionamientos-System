@@ -147,3 +147,12 @@ class MercadoPagoService:
 
     def serialize_event(self, event_data: Dict) -> str:
         return normalize_to_json(event_data)
+
+    def cancel_checkout(self, checkout_id: str) -> Dict:
+        # MercadoPago preference cancellation is not used in the current flow.
+        return {
+            "supported": False,
+            "cancelled_remote": False,
+            "checkout_id": checkout_id,
+            "message": "Cancelacion remota no soportada para mercadopago en este flujo",
+        }

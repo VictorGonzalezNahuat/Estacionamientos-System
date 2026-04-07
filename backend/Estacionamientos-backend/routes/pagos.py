@@ -4,12 +4,18 @@ from sqlalchemy import desc
 import os
 from core.security import get_current_user
 from core.payment_provider import get_payment_provider
-from core.parking_exit_service import procesar_webhook_pago, registrar_salida_tarjeta_pendiente
+from core.parking_exit_service import (
+    cancelar_transaccion_pago,
+    procesar_webhook_pago,
+    registrar_salida_tarjeta_pendiente,
+)
 from database import get_db
 from models.history_estacionamiento import HistoryEstacionamiento
 from models.payment_transaction import PaymentTransaction
 from models.usuario import Usuario
 from schemas.payment_transaction import (
+    CancelarPagoRequest,
+    CancelarPagoResponse,
     SalirTarjetaRequest,
     SalirTarjetaResponse,
     PaymentTransactionResponse,
@@ -22,6 +28,24 @@ router = APIRouter()
 
 def _get_provider_name() -> str:
     return os.getenv("PAYMENT_PROVIDER", "stripe").strip().lower()
+
+
+@router.post("/cancelar/{preferencia_id}", response_model=CancelarPagoResponse)
+def cancelar_pago(
+    preferencia_id: str,
+    payload: CancelarPagoRequest,
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    _ = current_user
+    return CancelarPagoResponse(
+        **cancelar_transaccion_pago(
+            db=db,
+            preferencia_id=preferencia_id,
+            provider_name=payload.provider or _get_provider_name(),
+            motivo=payload.motivo,
+        )
+    )
 
 
 @router.post("/salir_tarjeta", response_model=SalirTarjetaResponse)
