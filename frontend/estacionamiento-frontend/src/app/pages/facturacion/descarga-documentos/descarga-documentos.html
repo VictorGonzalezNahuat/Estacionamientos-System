@@ -1,0 +1,98 @@
+<section class="docs-page">
+	<div class="docs-overlay"></div>
+
+	<div class="docs-content">
+		<article class="docs-card">
+			<header class="card-header">
+				<p class="tag">Facturacion / Documentos</p>
+				<h1>Descarga de documentos fiscales</h1>
+				<p class="subtitle">
+					Solicitud #{{ invoiceRequestId }}
+				</p>
+			</header>
+
+			<div class="important-note-container">
+				<p class="important-note">
+					<strong>Nota importante por seguridad:</strong> Dispones de 3 dias para descargar tus documentos fiscales. Además, solo podras acceder a esta descarga mediante <strong>este dispositivo, navegador y pestaña</strong>. Si no marcaste la opcion de enviar por correo, debes descargar tus documentos ahora, de lo contrario perderas acceso a ellos.
+				</p>
+			</div>
+
+			@if (loadingStatus) {
+				<p class="loading">Consultando estado de la solicitud...</p>
+			} @else if (statusInfo) {
+				<section class="status-grid" aria-label="Informacion de la solicitud">
+					<div class="status-item status-item-highlight">
+						<span>Estado</span>
+						<strong class="status-pill" [class.status-pill-success]="isCompletedStatus(statusInfo.status)">
+							{{ displayStatusLabel(statusInfo.status) }}
+						</strong>
+					</div>
+					<div class="status-item">
+						<span>Documentos listos</span>
+						<strong>{{ statusInfo.documents_ready ? 'Si' : 'No' }}</strong>
+					</div>
+					<div class="status-item">
+						<span>Total</span>
+						<strong>{{ statusInfo.total ?? 'No disponible' }} {{ statusInfo.currency || '' }}</strong>
+					</div>
+					<div class="status-item">
+						<span>Intentos</span>
+						<strong>{{ statusInfo.attempts }}</strong>
+					</div>
+					<div class="status-item">
+						<span>Emitida</span>
+						<strong>{{ formatDateTime(statusInfo.issued_at) }}</strong>
+					</div>
+					<div class="status-item">
+						<span>Ultima actualizacion</span>
+						<strong>{{ formatDateTime(statusInfo.updated_at) }}</strong>
+					</div>
+				</section>
+
+				@if (invoiceAccessTokenExpiresAt) {
+					<p class="subtitle">Token de acceso vigente hasta: {{ formatDateTime(invoiceAccessTokenExpiresAt) }}</p>
+				}
+
+				<div class="actions-row">
+					<button type="button" class="xml-btn" [disabled]="downloadingXml || !statusInfo.documents_ready" (click)="downloadXml()">
+						{{ downloadingXml ? 'Descargando XML...' : 'Descargar XML' }}
+					</button>
+					<button type="button" class="pdf-btn" [disabled]="downloadingPdf || !statusInfo.documents_ready" (click)="downloadPdf()">
+						{{ downloadingPdf ? 'Descargando PDF...' : 'Descargar PDF' }}
+					</button>
+				</div>
+
+				@if (verificationUrl) {
+					<div class="verification-card">
+						<p class="verification-title">Verificacion de documentos (SAT)</p>
+
+						@if (generatingVerificationQr) {
+							<p class="loading">Generando codigo QR de verificacion...</p>
+						} @else if (verificationQrDataUrl) {
+							<img class="verification-qr" [src]="verificationQrDataUrl" alt="Codigo QR para verificacion de documentos" />
+						} @else {
+							<p class="loading">No se pudo generar el QR. Usa el enlace de verificacion.</p>
+						}
+
+						<a
+							class="verification-link"
+							[href]="verificationUrl"
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							Abrir verificacion en navegador
+						</a>
+					</div>
+				}
+
+				@if (!statusInfo.documents_ready) {
+					<p class="loading">Los documentos aun no estan listos. Actualiza el estado en unos momentos.</p>
+				}
+			}
+
+			<div class="footer-row">
+				<button type="button" class="final-btn" [routerLink]="['/facturacion']">Finalizar</button>
+			</div>
+		</article>
+	</div>
+</section>

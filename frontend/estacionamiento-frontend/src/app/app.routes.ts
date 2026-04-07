@@ -75,5 +75,17 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/acceso-movil/acceso-movil').then(m => m.AccesoMovil),
     canActivate: [authGuard]
   },
+  {
+    path: 'facturacion/registro-cliente',
+    loadComponent: () => import('./pages/facturacion/registro-cliente/registro-cliente').then(m => m.RegistroCliente)
+  },
+  {
+    path: 'facturacion',
+    loadComponent: () => import('./pages/facturacion/facturacion').then(m => m.Facturacion)
+  },
+  {
+    path: 'facturacion/descarga-documentos',
+    loadComponent: () => import('./pages/facturacion/descarga-documentos/descarga-documentos').then(m => m.DescargaDocumentos)
+  },
   { path: '', redirectTo: 'login', pathMatch: 'full' }
 ];

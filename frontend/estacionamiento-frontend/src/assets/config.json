@@ -1,5 +1,6 @@
 {
   "apiUrl": "http://192.168.1.3:8000",
+  "RECAPTCHA_SITE_KEY": "",
   "speech": {
     "voiceName": "",
     "lang": "es-MX",

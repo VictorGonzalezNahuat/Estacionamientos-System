@@ -1,0 +1,225 @@
+<section class="facturacion-page">
+	<div class="facturacion-overlay"></div>
+
+	<div class="facturacion-content">
+		<div class="facturacion-layout">
+			<article class="facturacion-card form-card">
+				<header class="card-header">
+					<p class="tag">Facturacion Estacionamiento</p>
+					<h1>Emision de facturas</h1>
+					<p class="subtitle">
+						Completa los datos como aparece en tu ticket.
+					</p>
+				</header>
+
+				<form id="invoiceForm" class="billing-form" aria-label="Formulario de emision de factura" #invoiceForm="ngForm" (ngSubmit)="onSubmit(invoiceForm)">
+					@if (isRateLimited) {
+					<div class="rate-limit-banner" role="status" aria-live="polite">
+						Temporalmente bloqueado por seguridad. Intenta de nuevo en {{ rateLimitRemainingSeconds }}s.
+					</div>
+					}
+					<fieldset class="billing-flow">
+						<section class="form-section">
+							<div class="section-title-row">
+								<h2>Datos fiscales</h2>
+								<span class="section-pill">Paso 1</span>
+							</div>
+
+							<div class="form-grid two-col-desktop">
+								<label>
+									RFC
+									<input
+										type="text"
+										name="rfc"
+										[(ngModel)]="form.rfc"
+										placeholder="Ej. XAXX010101000"
+										minlength="12"
+										maxlength="13"
+										pattern="[A-Za-zÑ&ñ&]{3,4}[0-9]{6}[A-Za-z0-9]{3}"
+										autocomplete="off"
+										required
+									/>
+									<small class="field-hint">Debe coincidir con el RFC del cliente registrado.</small>
+								</label>
+
+								<label>
+									Placa
+									<input
+										type="text"
+										name="placa"
+										[(ngModel)]="form.placa"
+										(ngModelChange)="clearFieldError('placa')"
+										[class.field-invalid]="!!fieldErrors.placa"
+										placeholder="Ej. ABC123A"
+										autocomplete="off"
+										required
+									/>
+									<small class="field-hint">Captura la placa sin espacios para mayor precision.</small>
+									@if (fieldErrors.placa) {
+									<small class="field-error">{{ fieldErrors.placa }}</small>
+									}
+								</label>
+							</div>
+						</section>
+
+						<section class="form-section">
+							<div class="section-title-row">
+								<h2>Datos del ticket</h2>
+								<span class="section-pill">Paso 2</span>
+							</div>
+
+							<div class="form-grid two-col-desktop">
+								<label>
+									Folio del ticket
+									<input
+										type="number"
+										name="history_estacionamiento_id"
+										[(ngModel)]="form.history_estacionamiento_id"
+										(ngModelChange)="clearFieldError('history_estacionamiento_id')"
+										[class.field-invalid]="!!fieldErrors.history_estacionamiento_id"
+										placeholder="Ej. 1024"
+										min="1"
+										required
+									/>
+									@if (fieldErrors.history_estacionamiento_id) {
+									<small class="field-error">{{ fieldErrors.history_estacionamiento_id }}</small>
+									}
+								</label>
+
+								<label>
+									Importe pagado
+									<input
+										type="number"
+										name="importe"
+										[(ngModel)]="form.importe"
+										(ngModelChange)="clearFieldError('importe')"
+										[class.field-invalid]="!!fieldErrors.importe"
+										placeholder="Ej. 45.00"
+										step="0.01"
+										min="0.01"
+										required
+									/>
+									@if (fieldErrors.importe) {
+									<small class="field-error">{{ fieldErrors.importe }}</small>
+									}
+								</label>
+								<label>
+									Fecha de salida
+									<input
+										type="date"
+										name="fecha_salida"
+										[(ngModel)]="form.fecha_salida"
+										(ngModelChange)="clearFieldError('fecha_salida')"
+										[class.field-invalid]="!!fieldErrors.fecha_salida"
+										autocomplete="off"
+										required
+									/>
+									<small class="field-hint">Selecciona la fecha exacta de salida del ticket pagado.</small>
+									@if (fieldErrors.fecha_salida) {
+									<small class="field-error">{{ fieldErrors.fecha_salida }}</small>
+									}
+								</label>
+
+								<label>
+									Hora de salida
+									<input
+										type="time"
+										name="hora_salida"
+										[(ngModel)]="form.hora_salida"
+										(ngModelChange)="clearFieldError('hora_salida')"
+										[class.field-invalid]="!!fieldErrors.hora_salida"
+										step="1"
+										autocomplete="off"
+										required
+									/>
+									<small class="field-hint">Captura la hora en formato de 12 horas con segundos (HH:mm:ss).</small>
+									@if (fieldErrors.hora_salida) {
+									<small class="field-error">{{ fieldErrors.hora_salida }}</small>
+									}
+								</label>
+							</div>
+						</section>
+
+						<section class="form-section">
+							<div class="section-title-row">
+								<h2>Entrega y comentarios</h2>
+								<span class="section-pill">Paso 3</span>
+							</div>
+
+							<div class="sync-switch-card invoice-switch-card">
+								<div class="sync-switch-copy">
+									<h3>Enviar factura por correo</h3>
+									<p>Activa esta opcion para enviar la factura al correo asociado al cliente fiscal.</p>
+								</div>
+
+								<label class="sync-switch" for="sendEmail" aria-label="Habilitar envio de factura por correo">
+									<input
+										type="checkbox"
+										id="sendEmail"
+										name="send_email"
+										[(ngModel)]="form.send_email"
+									/>
+									<span class="sync-slider"></span>
+								</label>
+							</div>
+
+							<label>
+								Notas
+								<textarea
+									name="notes"
+									[(ngModel)]="form.notes"
+									rows="3"
+									placeholder="Comentarios adicionales para la factura"
+								></textarea>
+							</label>
+						</section>
+
+						<button type="submit" class="invoice-btn mobile-submit" [disabled]="isSubmitting || isRateLimited || invoiceForm.invalid">
+							{{ isRateLimited ? ('Reintentar en ' + rateLimitRemainingSeconds + 's') : (isSubmitting ? 'Emitiendo factura...' : 'Emitir factura') }}
+						</button>
+					</fieldset>
+				</form>
+			</article>
+
+			<aside class="facturacion-card helper-card">
+				<div class="important-notice">
+					<p class="notice-text">
+						<strong>Importante:</strong> Asegurate de capturar exactamente los datos del ticket pagado para evitar rechazos al emitir la factura.
+					</p>
+				</div>
+
+				<div class="helper-primary-action">
+					<p>Accion principal</p>
+					<button type="button" class="invoice-btn desktop-submit" [disabled]="isSubmitting || isRateLimited || invoiceForm.invalid" (click)="invoiceForm.ngSubmit.emit()">
+						{{ isRateLimited ? ('Reintentar en ' + rateLimitRemainingSeconds + 's') : (isSubmitting ? 'Emitiendo factura...' : 'Emitir factura') }}
+					</button>
+				</div>
+
+				<h2>Panel de apoyo</h2>
+				<p class="helper-subtitle">Verifica que RFC, ticket y monto coincidan con la operacion pagada antes de emitir.</p>
+
+				<div class="helper-block">
+					<h3>Resumen rapido</h3>
+					<ul>
+						<li><strong>Folio:</strong> {{ form.history_estacionamiento_id || 'Sin capturar' }}</li>
+						<li><strong>RFC:</strong> {{ form.rfc || 'Sin capturar' }}</li>
+						<li><strong>Placa:</strong> {{ form.placa || 'Sin capturar' }}</li>
+						<li><strong>Salida:</strong> {{ fechaSalidaDisplay }} {{ horaSalidaDisplay }}</li>
+						<li><strong>Importe:</strong> {{ form.importe || '0.00' }}</li>
+					</ul>
+				</div>
+
+				<div class="helper-block">
+					<h3>Acciones complementarias</h3>
+					<p>Si el RFC no existe, el sistema abrira un formulario rapido para registrar y continuar automaticamente sin salir de esta pantalla.</p>
+					<button type="button" class="home-btn" [routerLink]="['/login']" aria-label="Volver al inicio del sistema">
+						<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+							<path d="M12 3.2L3 10.1V21h6.6v-5.2h4.8V21H21V10.1L12 3.2zM19.4 19.4H16v-5.2H8v5.2H4.6v-8.5L12 5.2l7.4 5.7v8.5z"></path>
+						</svg>
+						<span>Volver al inicio</span>
+					</button>
+				</div>
+			</aside>
+		</div>
+	</div>
+</section>

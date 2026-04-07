@@ -2,7 +2,7 @@ import { Injectable, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
 
 export interface AlertMessage {
-  type: 'success' | 'error' | 'info' | 'confirm' | 'session-restart' | 'password-input' | 'reset-password-step1' | 'reset-password-step2' | 'pending-messages' | 'payment-method-select' | 'corte-caja-preview' | 'corte-caja-status';
+  type: 'success' | 'error' | 'info' | 'confirm' | 'session-restart' | 'password-input' | 'reset-password-step1' | 'reset-password-step2' | 'pending-messages' | 'payment-method-select' | 'corte-caja-preview' | 'corte-caja-status' | 'fiscal-customer-input';
   message?: string;
 
   // NUEVO
@@ -37,6 +37,22 @@ export interface CorteCajaStatusData {
   corteId?: number;
 }
 
+export interface FiscalCustomerInputData {
+  rfc: string;
+  razon_social: string;
+  codigo_postal: string;
+  regimen_fiscal: string;
+  uso_cfdi_receptor: string;
+  nombre_contacto: string;
+  email: string;
+  telefono: string;
+  history_estacionamiento_id: string;
+  placa: string;
+  fecha_salida: string;
+  hora_salida: string;
+  importe: string;
+}
+
 
 @Injectable({
   providedIn: 'root'
@@ -51,6 +67,7 @@ export class AlertService {
   private passwordResolve: ((value: string | null) => void) | null = null;
   private resetPasswordResolve: ((value: { nueva: string; admin: string } | null) => void) | null = null;
   private corteCajaPreviewResolve: ((value: number | null) => void) | null = null;
+  private fiscalCustomerInputResolve: ((value: FiscalCustomerInputData | null) => void) | null = null;
   private _resetNuevaPassword = '';
   private _resetMessageTitle = '';
   private _corteCajaTotalDeclarado = 0;
@@ -182,6 +199,23 @@ export class AlertService {
         },
         inputValue: '',
         confirmText: 'Continuar',
+        cancelText: 'Cancelar',
+        persistent: true,
+      });
+    });
+  }
+
+  requestFiscalCustomerInput(defaults: FiscalCustomerInputData): Promise<FiscalCustomerInputData | null> {
+    return new Promise((resolve) => {
+      this.fiscalCustomerInputResolve = resolve;
+      this.show({
+        type: 'fiscal-customer-input',
+        title: 'Registro fiscal requerido',
+        message: 'El RFC no existe en sistema. Completa estos datos para registrar y continuar con la emision en un solo flujo.',
+        data: {
+          form: { ...defaults },
+        },
+        confirmText: 'Registrar y emitir',
         cancelText: 'Cancelar',
         persistent: true,
       });
@@ -357,6 +391,41 @@ export class AlertService {
     this.close();
   }
 
+  handleFiscalCustomerInputConfirm(): void {
+    if (!this.fiscalCustomerInputResolve) {
+      this.close();
+      return;
+    }
+
+    const state = this.alertState();
+    if (!state || state.type !== 'fiscal-customer-input') {
+      this.fiscalCustomerInputResolve(null);
+      this.fiscalCustomerInputResolve = null;
+      this.close();
+      return;
+    }
+
+    const form = state.data?.form as FiscalCustomerInputData | undefined;
+    if (!form) {
+      this.fiscalCustomerInputResolve(null);
+      this.fiscalCustomerInputResolve = null;
+      this.close();
+      return;
+    }
+
+    this.fiscalCustomerInputResolve({ ...form });
+    this.fiscalCustomerInputResolve = null;
+    this.close();
+  }
+
+  handleFiscalCustomerInputCancel(): void {
+    if (this.fiscalCustomerInputResolve) {
+      this.fiscalCustomerInputResolve(null);
+      this.fiscalCustomerInputResolve = null;
+    }
+    this.close();
+  }
+
   handlePasswordConfirm(confirmed: boolean) {
     if (this.passwordResolve) {
       const passwordValue = confirmed ? this.alertState()?.inputValue || null : null;
@@ -416,6 +485,10 @@ export class AlertService {
       this.corteCajaPreviewResolve(null);
       this.corteCajaPreviewResolve = null;
       this._corteCajaTotalDeclarado = 0;
+    }
+    if (currentAlert?.type === 'fiscal-customer-input' && this.fiscalCustomerInputResolve) {
+      this.fiscalCustomerInputResolve(null);
+      this.fiscalCustomerInputResolve = null;
     }
     currentAlert?.onClose?.();
   }

@@ -5,7 +5,7 @@ from core.sync_scheduler import start_sync_scheduler, stop_sync_scheduler
 from database import engine
 
 # Routers
-from routes import auth, configuracion, cortes_caja, current_estacionamientos, history_estacionamientos, mensajes, state_estacionamientos, sync, tarifas, turnos, usuarios, pagos
+from routes import auth, configuracion, cortes_caja, current_estacionamientos, history_estacionamientos, mensajes, state_estacionamientos, sync, tarifas, turnos, usuarios, pagos, facturacion
 
 # from app.routes import usuarios, tarifas, turnos
 
@@ -58,3 +58,4 @@ app.include_router(mensajes.router, prefix="/mensajes", tags=["Mensajes"])
 app.include_router(sync.router, prefix="/sync", tags=["Sync"])
 app.include_router(configuracion.router, prefix="/config", tags=["Configuracion"])
 app.include_router(pagos.router, prefix="/pagos", tags=["Pagos"])
+app.include_router(facturacion.router, prefix="/facturacion", tags=["Facturacion"])

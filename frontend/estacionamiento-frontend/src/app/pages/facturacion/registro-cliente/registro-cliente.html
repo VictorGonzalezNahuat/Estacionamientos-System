@@ -1,0 +1,211 @@
+<section class="registro-page">
+	<div class="registro-overlay"></div>
+
+	<div class="registro-content">
+		<div class="registro-layout">
+			<article class="registro-card form-card">
+				<header class="card-header">
+					<p class="tag">Facturacion / Registro</p>
+					<h1>Registro de cliente fiscal</h1>
+					<p class="subtitle">
+						Completa cada paso para guardar los datos sin errores y emitir facturas mas rapido.
+					</p>
+				</header>
+
+				<form id="registroClienteForm" class="registro-form" autocomplete="off" #registroForm="ngForm" (ngSubmit)="onSubmit(registroForm)">
+					<section class="form-section">
+						<div class="section-title-row">
+							<h2>Datos fiscales</h2>
+							<span class="section-pill">Paso 1</span>
+						</div>
+
+						<div class="form-grid two-col-desktop">
+							<label>
+								RFC
+								<input
+									type="text"
+									name="rfc"
+									[(ngModel)]="form.rfc"
+									(ngModelChange)="onRFCChange($event)"
+									placeholder="Ej. JUAP900101ABC"
+									minlength="12"
+									maxlength="13"
+									pattern="[A-Za-zÑ&ñ&]{3,4}[0-9]{6}[A-Za-z0-9]{3}"
+									autocomplete="off"
+									required
+								/>
+								<small class="field-hint">Se convierte a MAYUSCULAS automaticamente.</small>
+							</label>
+
+							<label>
+								Razon social
+								<input
+									type="text"
+									name="razon_social"
+									[(ngModel)]="form.razon_social"
+									placeholder="Ej. Estacionamientos Centro SA de CV"
+									autocomplete="organization"
+									required
+								/>
+								<small class="field-hint">Nombre fiscal tal como aparece en constancia.</small>
+							</label>
+
+							<label>
+								Codigo postal
+								<input
+									type="text"
+									name="codigo_postal"
+									[(ngModel)]="form.codigo_postal"
+									(ngModelChange)="onCodigoPostalChange($event)"
+									placeholder="Ej. 31160"
+									inputmode="numeric"
+									maxlength="5"
+									pattern="[0-9]{5}"
+									autocomplete="postal-code"
+									required
+								/>
+								<small class="field-hint">Solo 5 digitos.</small>
+							</label>
+
+							<label>
+								Regimen fiscal
+								<input
+									type="text"
+									name="regimen_fiscal"
+									[(ngModel)]="form.regimen_fiscal"
+									(ngModelChange)="onRegimenFiscalChange($event)"
+									placeholder="Ej. 601"
+									inputmode="numeric"
+									maxlength="3"
+									pattern="[0-9]{3}"
+									list="regimenesFiscales"
+									required
+								/>
+								<small class="field-hint">Codigo SAT de 3 digitos.</small>
+							</label>
+						</div>
+					</section>
+
+					<section class="form-section">
+						<div class="section-title-row">
+							<h2>Uso y contacto</h2>
+							<span class="section-pill">Paso 2</span>
+						</div>
+
+						<div class="form-grid two-col-desktop">
+							<label>
+								Uso CFDI receptor
+								<input
+									type="text"
+									name="uso_cfdi_receptor"
+									[(ngModel)]="form.uso_cfdi_receptor"
+									(ngModelChange)="onUsoCfdiChange($event)"
+									placeholder="Ej. G03"
+									maxlength="3"
+									pattern="[A-Za-z][0-9]{2}"
+									list="usoCfdiOptions"
+									required
+								/>
+								<small class="field-hint">Se sugiere G03 para gastos en general.</small>
+							</label>
+
+							<label>
+								Nombre de contacto
+								<input
+									type="text"
+									name="nombre_contacto"
+									[(ngModel)]="form.nombre_contacto"
+									placeholder="Ej. Juan Perez"
+									autocomplete="name"
+									required
+								/>
+								<small class="field-hint">Persona que recibira confirmaciones.</small>
+							</label>
+
+							<label>
+								Correo electronico
+								<input
+									type="email"
+									name="email"
+									[(ngModel)]="form.email"
+									placeholder="cliente@correo.com"
+									autocomplete="email"
+									required
+								/>
+								<small class="field-hint">Aqui se enviaran las facturas si se habilita correo.</small>
+							</label>
+
+							<label>
+								Telefono
+								<input
+									type="text"
+									name="telefono"
+									[(ngModel)]="form.telefono"
+									(ngModelChange)="onTelefonoChange($event)"
+									placeholder="Ej. 6141234567"
+									inputmode="numeric"
+									maxlength="10"
+									pattern="[0-9]{10}"
+									autocomplete="tel-national"
+									required
+								/>
+								<small class="field-hint">10 digitos sin espacios ni guiones.</small>
+							</label>
+						</div>
+					</section>
+
+					<button type="submit" class="primary-btn mobile-submit" [disabled]="isSubmitting">
+						{{ isSubmitting ? 'Registrando...' : 'Registrar cliente' }}
+					</button>
+
+					<datalist id="regimenesFiscales">
+						<option *ngFor="let regimen of regimenFiscalOptions" [value]="regimen.code">{{ regimen.code }} - {{ regimen.label }}</option>
+					</datalist>
+
+					<datalist id="usoCfdiOptions">
+						<option *ngFor="let uso of usoCfdiReceptorOptions" [value]="uso.code">{{ uso.code }} - {{ uso.label }}</option>
+					</datalist>
+				</form>
+			</article>
+
+			<aside class="registro-card helper-card">
+				<div class="helper-primary-action">
+					<p>Accion principal</p>
+					<button type="submit" form="registroClienteForm" class="primary-btn desktop-submit" [disabled]="isSubmitting">
+						{{ isSubmitting ? 'Registrando...' : 'Registrar cliente' }}
+					</button>
+				</div>
+
+				<h2>Panel de captura</h2>
+				<p class="helper-subtitle">Revisa el avance en tiempo real antes de guardar.</p>
+
+				<div class="helper-block">
+					<h3>Avance del formulario</h3>
+					<div class="progress-track" role="progressbar" [attr.aria-valuemin]="0" [attr.aria-valuemax]="100" [attr.aria-valuenow]="completionPercent">
+						<span class="progress-fill" [style.width.%]="completionPercent"></span>
+					</div>
+					<p class="progress-copy">{{ requiredFieldsCompleted }}/{{ requiredFieldsTotal }} campos obligatorios completos ({{ completionPercent }}%).</p>
+				</div>
+
+				<div class="helper-block">
+					<h3>Resumen rapido</h3>
+					<ul>
+						<li><strong>RFC:</strong> {{ normalizedRfcPreview }}</li>
+						<li><strong>Razon social:</strong> {{ form.razon_social || 'Sin capturar' }}</li>
+						<li><strong>Regimen:</strong> {{ form.regimen_fiscal || 'Sin capturar' }}</li>
+						<li><strong>Uso CFDI:</strong> {{ normalizedUsoCfdiPreview }}</li>
+						<li><strong>Contacto:</strong> {{ form.nombre_contacto || 'Sin capturar' }}</li>
+						<li><strong>Email:</strong> {{ form.email || 'Sin capturar' }}</li>
+						<li><strong>Telefono:</strong> {{ formattedPhonePreview }}</li>
+					</ul>
+				</div>
+
+				<div class="helper-block">
+					<h3>Atajos</h3>
+					<p>Si ya tienes todos los datos cargados, guarda y vuelve al modulo de facturacion.</p>
+					<button type="button" class="secondary-btn" (click)="goBack()">Volver a facturacion</button>
+				</div>
+			</aside>
+		</div>
+	</div>
+</section>

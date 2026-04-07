@@ -52,6 +52,10 @@ export class Login implements AfterViewInit {
     });
   }
 
+  goToFacturacion(): void {
+    void this.router.navigate(['/facturacion']);
+  }
+
   private async handleSuccessfulLogin(token: string): Promise<void> {
     this.authService.saveToken(token);
     this.anunciarBienvenida();

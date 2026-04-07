@@ -245,6 +245,7 @@ def generar_ticket_salida_prueba(
 	buffer += _texto_escpos("--------------------------------\n")
 
 	buffer += align_left
+	buffer += _texto_escpos(f"Folio        : {folio}\n")
 	buffer += _texto_escpos(f"Placa        : {placa}\n")
 	buffer += _texto_escpos(
 		f"Entrada      : {_formatear_fecha_ddmmaaaa(fecha_entrada)} {_formatear_hora_12h(fecha_entrada)}\n"

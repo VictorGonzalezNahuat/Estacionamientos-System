@@ -52,24 +52,36 @@ export interface CortesConfigUpdate extends CortesConfigResponse {
   SMTP_PASSWORD: string;
 }
 
+export interface RuntimeConfig {
+  apiUrl: string;
+  RECAPTCHA_SITE_KEY?: string;
+  speech?: {
+    voiceName?: string;
+    lang?: string;
+    rate?: number;
+    pitch?: number;
+    volume?: number;
+  };
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class ConfigService {
 
-  private config: any;
+  private config: RuntimeConfig | null = null;
   private http = inject(HttpClient);
 
   constructor() {}
 
   async loadConfig(): Promise<void> {
     this.config = await firstValueFrom(
-      this.http.get('/config.json')
+      this.http.get<RuntimeConfig>('/config.json')
     );
   }
 
   get apiUrl(): string {
-    return this.config?.apiUrl;
+    return this.config?.apiUrl ?? '';
   }
 
   get speechVoiceName(): string | undefined {
@@ -90,6 +102,10 @@ export class ConfigService {
 
   get speechVolume(): number {
     return this.config?.speech?.volume ?? 1;
+  }
+
+  get recaptchaSiteKey(): string {
+    return this.config?.RECAPTCHA_SITE_KEY?.trim() ?? '';
   }
 
   // Métodos para la configuración del sistema

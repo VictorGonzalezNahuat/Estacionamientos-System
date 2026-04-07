@@ -1,0 +1,244 @@
+.docs-page {
+	min-height: 100vh;
+	position: relative;
+	background-image: url('/parking.jpg');
+	background-size: cover;
+	background-position: center;
+	display: flex;
+	justify-content: center;
+	padding: 24px 16px;
+}
+
+.docs-overlay {
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(135deg, rgba(15, 23, 42, 0.93), rgba(37, 99, 235, 0.85));
+}
+
+.docs-content {
+	width: 100%;
+	max-width: 860px;
+	position: relative;
+	z-index: 1;
+}
+
+.docs-card {
+	background: rgba(255, 255, 255, 0.16);
+	border: 1px solid rgba(255, 255, 255, 0.32);
+	border-radius: 18px;
+	padding: clamp(18px, 3vw, 30px);
+	box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+	backdrop-filter: blur(18px);
+	-webkit-backdrop-filter: blur(18px);
+}
+
+.card-header {
+	margin-bottom: 18px;
+}
+
+.tag {
+	margin: 0 0 6px;
+	font-size: 12px;
+	letter-spacing: 1px;
+	text-transform: uppercase;
+	color: #bfdbfe;
+	font-weight: 700;
+}
+
+.card-header h1 {
+	margin: 0;
+	font-size: clamp(24px, 4vw, 34px);
+	color: #ffffff;
+}
+
+.subtitle {
+	margin: 8px 0 0;
+	color: rgba(255, 255, 255, 0.9);
+	line-height: 1.55;
+}
+
+.loading {
+	color: #e2e8f0;
+	margin: 0 0 14px;
+}
+
+.status-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 10px;
+	margin-bottom: 14px;
+}
+
+.status-item {
+	background: rgba(15, 23, 42, 0.32);
+	border: 1px solid rgba(148, 163, 184, 0.3);
+	border-radius: 12px;
+	padding: 10px 12px;
+	display: grid;
+	gap: 6px;
+}
+
+.status-item span {
+	font-size: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.8px;
+	color: #93c5fd;
+}
+
+.status-item strong {
+	color: #f8fafc;
+	word-break: break-word;
+}
+
+.status-item-highlight {
+	border-color: rgba(110, 231, 183, 0.35);
+	background: linear-gradient(145deg, rgba(5, 46, 22, 0.55), rgba(21, 128, 61, 0.28));
+}
+
+.status-pill {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 34px;
+	padding: 6px 12px;
+	border-radius: 999px;
+	background: rgba(30, 64, 175, 0.33);
+	border: 1px solid rgba(96, 165, 250, 0.45);
+	color: #dbeafe;
+	font-size: 14px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.4px;
+}
+
+.status-pill-success {
+	background: rgba(22, 163, 74, 0.22);
+	border-color: rgba(134, 239, 172, 0.7);
+	color: #dcfce7;
+}
+
+.error-text {
+	margin: 0 0 14px;
+	color: #fecaca;
+	background: rgba(127, 29, 29, 0.45);
+	border: 1px solid rgba(248, 113, 113, 0.5);
+	border-radius: 10px;
+	padding: 10px 12px;
+}
+
+.important-note-container {
+	margin-bottom: 18px;
+}
+
+.important-note {
+	margin: 0;
+	color: #fef3c7;
+	background: linear-gradient(145deg, rgba(78, 22, 6, 0.55), rgba(124, 45, 18, 0.35));
+	border: 1px solid rgba(251, 146, 60, 0.55);
+	border-radius: 10px;
+	padding: 12px 14px;
+	font-size: 14px;
+	line-height: 1.55;
+}
+
+.important-note strong {
+	color: #fed7aa;
+	font-weight: 700;
+}
+
+.verification-link {
+	color: #bbf7d0;
+	font-weight: 600;
+	text-decoration: underline;
+}
+
+.verification-card {
+	margin-bottom: 14px;
+	padding: 14px;
+	border-radius: 12px;
+	background: rgba(6, 78, 59, 0.45);
+	border: 1px solid rgba(110, 231, 183, 0.45);
+	display: grid;
+	justify-items: center;
+	gap: 10px;
+	text-align: center;
+}
+
+.verification-title {
+	margin: 0;
+	color: #d1fae5;
+	font-weight: 700;
+}
+
+.verification-qr {
+	width: min(220px, 100%);
+	height: auto;
+	border-radius: 10px;
+	background: #ffffff;
+	padding: 8px;
+	box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+}
+
+.actions-row,
+.footer-row {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 10px;
+}
+
+.actions-row {
+	grid-template-columns: 1fr 1fr;
+	margin-bottom: 14px;
+}
+
+.xml-btn,
+.pdf-btn,
+.final-btn {
+	min-height: 48px;
+	border-radius: 12px;
+	padding: 12px 16px;
+	font-size: 15px;
+	font-weight: 700;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.xml-btn,
+.pdf-btn {
+	border: none;
+	color: #ffffff;
+}
+
+.xml-btn {
+	background: linear-gradient(135deg, #1d4ed8, #1e3a8a);
+}
+
+.pdf-btn {
+	background: linear-gradient(135deg, #0f766e, #115e59);
+}
+
+.xml-btn:hover,
+.pdf-btn:hover,
+.final-btn:hover {
+	transform: translateY(-2px);
+}
+
+.final-btn {
+	border: 1px solid rgba(248, 113, 113, 0.6);
+	background: linear-gradient(135deg, #dc2626, #991b1b);
+	color: #ffffff;
+}
+
+.xml-btn:disabled,
+.pdf-btn:disabled {
+	opacity: 0.65;
+	cursor: not-allowed;
+	transform: none;
+}
+
+@media (max-width: 700px) {
+	.status-grid,
+	.actions-row {
+		grid-template-columns: 1fr;
+	}
+}

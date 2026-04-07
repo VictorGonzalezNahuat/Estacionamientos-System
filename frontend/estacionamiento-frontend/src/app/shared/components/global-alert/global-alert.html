@@ -14,6 +14,7 @@
       [class.payment-method-select]="alert.type === 'payment-method-select'"
       [class.corte-caja-preview]="alert.type === 'corte-caja-preview'"
       [class.corte-caja-status]="alert.type === 'corte-caja-status'"
+      [class.fiscal-customer-input]="alert.type === 'fiscal-customer-input'"
       [class.corte-caja-status-processing]="alert.type === 'corte-caja-status' && alert.data?.stage === 'processing'"
       [class.corte-caja-status-success]="alert.type === 'corte-caja-status' && alert.data?.stage === 'success'"
       [class.corte-caja-status-error]="alert.type === 'corte-caja-status' && alert.data?.stage === 'error'">
@@ -29,7 +30,7 @@
     </div>
 
     <!-- TÍTULO PARA CONFIRM / SESSION-RESTART / PASSWORD-INPUT -->
-    @if ((alert.type === 'confirm' || alert.type === 'session-restart' || alert.type === 'password-input' || alert.type === 'reset-password-step1' || alert.type === 'reset-password-step2' || alert.type === 'pending-messages' || alert.type === 'payment-method-select' || alert.type === 'corte-caja-preview' || alert.type === 'corte-caja-status') && alert.title) {
+    @if ((alert.type === 'confirm' || alert.type === 'session-restart' || alert.type === 'password-input' || alert.type === 'reset-password-step1' || alert.type === 'reset-password-step2' || alert.type === 'pending-messages' || alert.type === 'payment-method-select' || alert.type === 'corte-caja-preview' || alert.type === 'corte-caja-status' || alert.type === 'fiscal-customer-input') && alert.title) {
     <div class="alert-title">
       {{ alert.title }}
     </div>
@@ -288,7 +289,7 @@
     }
 
     <!-- BOTONES -->
-    @if (alert.type === 'confirm' || alert.type === 'password-input' || alert.type === 'corte-caja-preview') {
+    @if (alert.type === 'confirm' || alert.type === 'password-input' || alert.type === 'corte-caja-preview' || alert.type === 'fiscal-customer-input') {
     <div class="alert-buttons">
       @if (alert.type === 'confirm') {
       <button class="alert-button btn-cancel"
@@ -315,6 +316,12 @@
         {{ alert.secondaryText || 'Editar total' }}
       </button>
       }
+      }
+      @if (alert.type === 'fiscal-customer-input') {
+      <button class="alert-button btn-cancel"
+          (click)="alertService.handleFiscalCustomerInputCancel()">
+        {{ alert.cancelText || 'Cancelar' }}
+      </button>
       }
       @if (alert.type === 'confirm') {
       <button class="alert-button btn-confirm"
@@ -345,6 +352,70 @@
         {{ alert.cancelText || 'Cancelar' }}
       </button>
       }
+      @if (alert.type === 'fiscal-customer-input') {
+      <button class="alert-button btn-confirm"
+              [disabled]="!isFiscalCustomerInputValid(alert)"
+              (click)="alertService.handleFiscalCustomerInputConfirm()">
+        {{ alert.confirmText || 'Aceptar' }}
+      </button>
+      }
+    </div>
+    }
+
+    @if (alert.type === 'fiscal-customer-input') {
+    <div class="fiscal-customer-input-grid">
+      <label class="fiscal-customer-label">
+        RFC
+        <input class="password-input-field" type="text" [(ngModel)]="alert.data.form.rfc" maxlength="13" />
+      </label>
+      <label class="fiscal-customer-label">
+        Razon social
+        <input class="password-input-field" type="text" [(ngModel)]="alert.data.form.razon_social" />
+      </label>
+      <label class="fiscal-customer-label">
+        Codigo postal
+        <input class="password-input-field" type="text" [(ngModel)]="alert.data.form.codigo_postal" maxlength="5" />
+      </label>
+      <label class="fiscal-customer-label">
+        Regimen fiscal
+        <input class="password-input-field" type="text" [(ngModel)]="alert.data.form.regimen_fiscal" maxlength="3" />
+      </label>
+      <label class="fiscal-customer-label">
+        Uso CFDI
+        <input class="password-input-field" type="text" [(ngModel)]="alert.data.form.uso_cfdi_receptor" maxlength="3" />
+      </label>
+      <label class="fiscal-customer-label">
+        Nombre de contacto
+        <input class="password-input-field" type="text" [(ngModel)]="alert.data.form.nombre_contacto" />
+      </label>
+      <label class="fiscal-customer-label">
+        Email
+        <input class="password-input-field" type="email" [(ngModel)]="alert.data.form.email" />
+      </label>
+      <label class="fiscal-customer-label">
+        Telefono
+        <input class="password-input-field" type="text" [(ngModel)]="alert.data.form.telefono" maxlength="10" />
+      </label>
+      <label class="fiscal-customer-label">
+        Folio del ticket
+        <input class="password-input-field" type="number" min="1" [(ngModel)]="alert.data.form.history_estacionamiento_id" />
+      </label>
+      <label class="fiscal-customer-label">
+        Placa
+        <input class="password-input-field" type="text" [(ngModel)]="alert.data.form.placa" />
+      </label>
+      <label class="fiscal-customer-label">
+        Fecha de salida
+        <input class="password-input-field" type="date" [(ngModel)]="alert.data.form.fecha_salida" />
+      </label>
+      <label class="fiscal-customer-label">
+        Hora de salida
+        <input class="password-input-field" type="time" step="1" [(ngModel)]="alert.data.form.hora_salida" />
+      </label>
+      <label class="fiscal-customer-label fiscal-customer-label-full">
+        Importe
+        <input class="password-input-field" type="number" step="0.01" min="0.01" [(ngModel)]="alert.data.form.importe" />
+      </label>
     </div>
     }
 
@@ -429,7 +500,7 @@
         }
 
     <!-- BOTÓN GLOBAL (para SUCCESS / ERROR / INFO) -->
-        @if (alert.type !== 'confirm' && alert.type !== 'session-restart' && alert.type !== 'password-input' && alert.type !== 'reset-password-step1' && alert.type !== 'reset-password-step2' && alert.type !== 'pending-messages' && alert.type !== 'payment-method-select' && alert.type !== 'corte-caja-preview' && alert.type !== 'corte-caja-status') {
+        @if (alert.type !== 'confirm' && alert.type !== 'session-restart' && alert.type !== 'password-input' && alert.type !== 'reset-password-step1' && alert.type !== 'reset-password-step2' && alert.type !== 'pending-messages' && alert.type !== 'payment-method-select' && alert.type !== 'corte-caja-preview' && alert.type !== 'corte-caja-status' && alert.type !== 'fiscal-customer-input') {
     <button class="alert-button"
             (click)="alertService.close()">
       Aceptar

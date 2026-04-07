@@ -80,6 +80,7 @@ class ParkingExitResult:
     checkout_url: str = ""
     provider: str = ""
     payment_transaction_id: int | None = None
+    history_estacionamiento_id: int | None = None
 
     def to_dict(self) -> dict:
         data = asdict(self)
@@ -190,7 +191,7 @@ def _construir_ticket_salida_historial(historial: HistoryEstacionamiento, cajero
     entrada = datetime.combine(historial.fecha_entrada, historial.hora_entrada)
     salida_historial_dt = datetime.combine(historial.fecha_salida, historial.hora_salida)
     minutos_estadia = max(1, int((salida_historial_dt - entrada).total_seconds() / 60))
-    folio_salida = f"SAL-{historial.placa}-{salida_historial_dt:%Y%m%d%H%M%S}"
+    folio_salida = str(historial.id)
 
     return construir_ticket_salida(
         folio=folio_salida,
@@ -208,11 +209,11 @@ def _construir_ticket_salida_historial(historial: HistoryEstacionamiento, cajero
 def registrar_salida_efectivo(db: Session, current_user: Usuario, placa: str) -> ParkingExitResult:
     context = _crear_contexto_salida(db, current_user, placa, metodo_pago="efectivo")
 
-    _crear_historial(db, context, payment_transaction_id=None, pagado=True)
+    historial = _crear_historial(db, context, payment_transaction_id=None, pagado=True)
     _cerrar_vehiculo(db, context.placa)
     db.commit()
 
-    folio = f"SAL-{context.placa}-{context.salida_dt:%Y%m%d%H%M%S}"
+    folio = str(historial.id)
     ticket_bytes = construir_ticket_salida(
         folio=folio,
         placa=context.placa,
@@ -250,6 +251,7 @@ def registrar_salida_efectivo(db: Session, current_user: Usuario, placa: str) ->
         ticket_impreso=impreso_ok,
         impresion_mensaje=impresion_mensaje,
         ticket_copias=2,
+        history_estacionamiento_id=historial.id,
     )
 
 
@@ -290,6 +292,7 @@ def registrar_salida_tarjeta_pendiente(
                 hora_salida=str(historial_pendiente.hora_salida),
                 minutos_estadia=context.total_minutos,
                 estado="pendiente",
+                history_estacionamiento_id=historial_pendiente.id,
             )
 
     from core.payment_provider import get_payment_provider
@@ -321,10 +324,10 @@ def registrar_salida_tarjeta_pendiente(
     db.add(payment_transaction)
     db.flush()
 
-    _crear_historial(db, context, payment_transaction_id=payment_transaction.id, pagado=False)
+    historial = _crear_historial(db, context, payment_transaction_id=payment_transaction.id, pagado=False)
     db.commit()
 
-    folio = f"SAL-{context.placa}-{context.salida_dt:%Y%m%d%H%M%S}"
+    folio = str(historial.id)
     ticket_bytes = construir_ticket_salida(
         folio=folio,
         placa=context.placa,
@@ -351,6 +354,7 @@ def registrar_salida_tarjeta_pendiente(
         ticket_bin=str(ticket_path),
         estado="pendiente",
         payment_transaction_id=payment_transaction.id,
+        history_estacionamiento_id=historial.id,
     )
 
 

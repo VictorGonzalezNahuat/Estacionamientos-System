@@ -27,6 +27,7 @@ export class GlobalAlert {
     'payment-method-select': 'assets/alerts/interrogation.svg',
     'corte-caja-preview': 'assets/alerts/confirm.svg',
     'corte-caja-status': 'assets/alerts/success.svg',
+    'fiscal-customer-input': 'assets/alerts/secure.svg',
   };
 
   mostrarNuevaPass = signal(false);
@@ -112,6 +113,49 @@ export class GlobalAlert {
 
   getAlertIconAlt(type: AlertMessage['type']): string {
     return `Icono de alerta ${type}`;
+  }
+
+  isFiscalCustomerInputValid(alert: AlertMessage | null | undefined): boolean {
+    const form = alert?.data?.form;
+    if (!form) {
+      return false;
+    }
+
+    const hasRequiredText = [
+      form.rfc,
+      form.razon_social,
+      form.codigo_postal,
+      form.regimen_fiscal,
+      form.uso_cfdi_receptor,
+      form.nombre_contacto,
+      form.email,
+      form.telefono,
+      form.history_estacionamiento_id,
+      form.placa,
+      form.fecha_salida,
+      form.hora_salida,
+      form.importe,
+    ].every((value: string) => typeof value === 'string' && value.trim().length > 0);
+
+    if (!hasRequiredText) {
+      return false;
+    }
+
+    const fechaValida = /^\d{4}-\d{2}-\d{2}$/.test(form.fecha_salida.trim());
+    const horaValida = /^\d{2}:\d{2}(:\d{2})?$/.test(form.hora_salida.trim());
+    const importe = Number(form.importe);
+    const historyId = Number(form.history_estacionamiento_id);
+    const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim());
+
+    return (
+      fechaValida
+      && horaValida
+      && Number.isFinite(importe)
+      && importe > 0
+      && Number.isFinite(historyId)
+      && historyId > 0
+      && emailValido
+    );
   }
 
   handleIconError(event: Event): void {

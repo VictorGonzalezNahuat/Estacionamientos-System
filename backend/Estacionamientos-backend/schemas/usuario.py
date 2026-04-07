@@ -26,6 +26,7 @@ class UsuarioUpdate(BaseModel):
     comision: Optional[float] = None
     rol: UserRoles | None = None
     observaciones: Optional[str] = None
+    email: Optional[str] = None
 
 
 class UsuarioResponse(UsuarioBase):

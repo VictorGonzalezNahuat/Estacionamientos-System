@@ -19,7 +19,7 @@
 		<div class="main-content-grid">
 			<div class="form-card">
 				<h2 class="form-title title-with-icon">
-					@if (editandoCodigo()) {
+					@if (estaEditando()) {
 						<img src="/assets/icons/encargados/edit.svg" alt="" class="title-icon" aria-hidden="true" />
 						<span>Editar Usuario</span>
 					} @else {
@@ -31,12 +31,17 @@
 				<form [formGroup]="encargadoForm" (ngSubmit)="guardarUsuario()" class="form-grid">
 					<div class="form-group">
 						<label>Código</label>
-						<input type="number" formControlName="codigo" placeholder="Ej: 101" min="1" />
+						<input type="number" formControlName="codigo" placeholder="Ej: 101" min="0" />
 					</div>
 
 					<div class="form-group">
 						<label>Nombre</label>
 						<input type="text" formControlName="nombre" placeholder="Tu nombre aquí" />
+					</div>
+
+					<div class="form-group">
+						<label>Email</label>
+						<input type="email" formControlName="email" placeholder="correo@ejemplo.com" />
 					</div>
 
 					<div class="form-group">
@@ -50,7 +55,7 @@
 						/>
 					</div>
 
-					@if (!editandoCodigo()) {
+					@if (!estaEditando()) {
 					<div class="password-panel full-width">
 						<div class="password-grid">
 							<div class="form-group password-group">
@@ -128,7 +133,7 @@
 					<div class="button-group">
 						<button type="submit" class="btn btn-primary btn-with-icon" [disabled]="encargadoForm.invalid || guardando()">
 							<img src="/assets/icons/encargados/save.svg" alt="" class="btn-icon" aria-hidden="true" />
-							<span>{{ guardando() ? 'Guardando...' : (editandoCodigo() ? 'Actualizar' : 'Guardar') }}</span>
+							<span>{{ guardando() ? 'Guardando...' : (estaEditando() ? 'Actualizar' : 'Guardar') }}</span>
 						</button>
 
 						<button type="button" class="btn btn-secondary btn-with-icon" (click)="limpiarFormulario()">
@@ -136,7 +141,7 @@
 							<span>Limpiar</span>
 						</button>
 
-						@if (editandoCodigo()) {
+						@if (estaEditando()) {
 						<button type="button" class="btn btn-danger btn-with-icon" (click)="cancelarEdicion()">
 							<img src="/assets/icons/encargados/cancel.svg" alt="" class="btn-icon" aria-hidden="true" />
 							<span>Cancelar</span>
@@ -170,6 +175,7 @@
 							<tr>
 								<th>Código</th>
 								<th>Nombre</th>
+								<th>Email</th>
 								<th>Comisión</th>
 								<th>Roles</th>
 								<th>Observaciones</th>
@@ -182,6 +188,7 @@
 							<tr [class.highlight]="editandoCodigo() === usuario.codigo">
 								<td class="codigo">{{ usuario.codigo }}</td>
 								<td>{{ usuario.nombre || 'Sin nombre' }}</td>
+								<td>{{ usuario.email || '—' }}</td>
 								<td>{{ usuario.comision ?? 0 | number: '1.0-2' }}</td>
 								<td>
 									<div class="roles-list">

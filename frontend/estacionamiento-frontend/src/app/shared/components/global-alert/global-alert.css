@@ -724,6 +724,33 @@
   max-width: 460px;
 }
 
+.custom-alert.fiscal-customer-input {
+  border-left: 6px solid #0ea5e9;
+  min-width: 560px;
+  max-width: 760px;
+}
+
+.fiscal-customer-input-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  text-align: left;
+}
+
+.fiscal-customer-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #dbeafe;
+  letter-spacing: 0.3px;
+}
+
+.fiscal-customer-label-full {
+  grid-column: span 2;
+}
+
 .reset-fields-grid {
   display: flex;
   flex-direction: column;
@@ -887,4 +914,19 @@
 
 .btn-mark-read:hover {
   background: #c2410c !important;
+}
+
+@media (max-width: 768px) {
+  .custom-alert.fiscal-customer-input {
+    min-width: 320px;
+    max-width: min(96vw, 520px);
+  }
+
+  .fiscal-customer-input-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fiscal-customer-label-full {
+    grid-column: span 1;
+  }
 }

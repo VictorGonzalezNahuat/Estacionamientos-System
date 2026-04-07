@@ -50,6 +50,7 @@ class SalirTarjetaResponse(BaseModel):
     minutos_estadia: int
     ticket_bin: str
     estado: str = "pendiente"
+    history_estacionamiento_id: Optional[int] = None
 
     class Config:
         from_attributes = True

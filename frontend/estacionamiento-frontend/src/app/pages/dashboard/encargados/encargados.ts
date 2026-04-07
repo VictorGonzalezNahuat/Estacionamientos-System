@@ -32,6 +32,7 @@ interface Usuario {
   comision: number | null;
   rol: RolUsuario | string | null;
   observaciones: string | null;
+  email: string | null;
 }
 
 interface UsuarioPayload {
@@ -40,6 +41,7 @@ interface UsuarioPayload {
   comision: number;
   rol: RolUsuario;
   observaciones: string;
+  email: string;
   password: string;
 }
 
@@ -49,6 +51,7 @@ interface UsuarioUpdatePayload {
   comision: number;
   rol: RolUsuario;
   observaciones: string;
+  email: string;
   password: string;
 }
 
@@ -89,7 +92,7 @@ export class Encargados implements OnInit {
   private initializeForm(): void {
     this.encargadoForm = this.fb.group(
       {
-        codigo: ['', [Validators.required, Validators.min(1)]],
+        codigo: ['', [Validators.required, Validators.min(0)]],
         nombre: ['', Validators.required],
         comision: [0, [Validators.required, Validators.min(0)]],
         rol: this.fb.group(
@@ -99,6 +102,7 @@ export class Encargados implements OnInit {
           }
         ),
         observaciones: [''],
+        email: ['', [Validators.required, Validators.email]],
         password: ['', [Validators.required, Validators.minLength(1)]],
         confirmPassword: ['', [Validators.required, Validators.minLength(1)]],
       },
@@ -160,7 +164,7 @@ export class Encargados implements OnInit {
       return;
     }
 
-    this.editandoCodigo() ? this.actualizarUsuario() : this.crearUsuario();
+    this.estaEditando() ? this.actualizarUsuario() : this.crearUsuario();
   }
 
   private crearUsuario(): void {
@@ -176,6 +180,7 @@ export class Encargados implements OnInit {
         encargado: Boolean(formData.rol?.encargado),
       },
       observaciones: String(formData.observaciones ?? '').trim(),
+      email: String(formData.email ?? '').trim(),
       password: String(formData.password),
     };
 
@@ -199,7 +204,7 @@ export class Encargados implements OnInit {
   private async actualizarUsuario(): Promise<void> {
     const codigo = this.editandoCodigo();
 
-    if (!codigo) {
+    if (codigo === null) {
       this.alertService.error('No se encontro el usuario a editar');
       return;
     }
@@ -225,6 +230,7 @@ export class Encargados implements OnInit {
         encargado: Boolean(formData.rol?.encargado),
       },
       observaciones: String(formData.observaciones ?? '').trim(),
+      email: String(formData.email ?? '').trim(),
       password: adminPassword,
     };
 
@@ -294,6 +300,7 @@ export class Encargados implements OnInit {
       comision: usuario.comision ?? 0,
       rol: this.normalizarRol(usuario.rol),
       observaciones: usuario.observaciones ?? '',
+      email: usuario.email ?? '',
       password: '',
       confirmPassword: '',
     });
@@ -352,6 +359,7 @@ export class Encargados implements OnInit {
         encargado: true,
       },
       observaciones: '',
+      email: '',
       password: '',
       confirmPassword: '',
     });
@@ -410,6 +418,10 @@ export class Encargados implements OnInit {
 
   alternarConfirmPassword(): void {
     this.mostrarConfirmPassword.update((value) => !value);
+  }
+
+  estaEditando(): boolean {
+    return this.editandoCodigo() !== null;
   }
 
   formatearRol(rol: RolUsuario | string | null): string {
