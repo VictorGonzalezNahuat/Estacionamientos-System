@@ -38,6 +38,7 @@ starlette==0.52.1
 stripe==12.5.1
 typing-inspection==0.4.2
 typing_extensions==4.15.0
+tzdata>=2024.1
 urllib3==2.6.3
 uvicorn==0.40.0
 viivakoodi==0.8.0
