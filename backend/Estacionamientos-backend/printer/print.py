@@ -1,4 +1,5 @@
 import os
+import json
 import textwrap
 from datetime import datetime
 from pathlib import Path
@@ -6,13 +7,312 @@ from typing import Optional, Sequence
 from urllib.parse import quote
 
 from core import config as app_config
+import escpos.printer as escpos_printer
 from escpos.printer import Network
 
 
 _PRINTER_DIR = Path(__file__).resolve().parent
+_PRINTER_CONFIG_PATH = _PRINTER_DIR.parent / "config" / "config_printer.json"
 _ENCABEZADO_ENTRADA = _PRINTER_DIR / "encabezado_entrada.png"
 _ENCABEZADO_SALIDA = _PRINTER_DIR / "encabezado_salida.png"
 _ANCHO_AVISO_80MM = 42
+_PRINTER_METHOD_NETWORK = "NETWORK"
+_PRINTER_METHOD_USB = "USB"
+
+
+def _default_printer_config() -> dict:
+	return {
+		"method": _PRINTER_METHOD_NETWORK,
+		"network": {
+			"host": os.getenv("PRINTER_HOST", "192.168.1.130").strip(),
+			"port": int(os.getenv("PRINTER_PORT", "9100")),
+			"timeout": int(os.getenv("PRINTER_TIMEOUT", "10")),
+		},
+		"usb": {
+			"mode": "WINDOWS_DEFAULT",
+			"printer_name": "",
+		},
+	}
+
+
+def _load_printer_config() -> dict:
+	default_cfg = _default_printer_config()
+
+	if not _PRINTER_CONFIG_PATH.exists():
+		return default_cfg
+
+	try:
+		raw_text = _PRINTER_CONFIG_PATH.read_text(encoding="utf-8").strip()
+		if not raw_text:
+			return default_cfg
+		loaded = json.loads(raw_text)
+		if not isinstance(loaded, dict):
+			return default_cfg
+	except Exception:
+		return default_cfg
+
+	method = str(loaded.get("method", default_cfg["method"])).strip().upper()
+	if method not in {_PRINTER_METHOD_NETWORK, _PRINTER_METHOD_USB}:
+		method = _PRINTER_METHOD_NETWORK
+
+	network_candidate = loaded.get("network")
+	usb_candidate = loaded.get("usb")
+	network_loaded = network_candidate if isinstance(network_candidate, dict) else {}
+	usb_loaded = usb_candidate if isinstance(usb_candidate, dict) else {}
+
+	try:
+		port = int(network_loaded.get("port", default_cfg["network"]["port"]))
+	except (TypeError, ValueError):
+		port = int(default_cfg["network"]["port"])
+
+	try:
+		timeout = int(network_loaded.get("timeout", default_cfg["network"]["timeout"]))
+	except (TypeError, ValueError):
+		timeout = int(default_cfg["network"]["timeout"])
+
+	host = str(network_loaded.get("host", default_cfg["network"]["host"]))
+	printer_name = str(usb_loaded.get("printer_name", "") or "").strip()
+	usb_mode = str(usb_loaded.get("mode", "WINDOWS_DEFAULT") or "WINDOWS_DEFAULT").strip().upper()
+
+	return {
+		"method": method,
+		"network": {
+			"host": host.strip(),
+			"port": max(1, port),
+			"timeout": max(1, timeout),
+		},
+		"usb": {
+			"mode": usb_mode,
+			"printer_name": printer_name,
+		},
+	}
+
+
+def _save_printer_config(config_data: dict) -> None:
+	_PRINTER_CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+	_PRINTER_CONFIG_PATH.write_text(
+		json.dumps(config_data, ensure_ascii=True, indent=2) + "\n",
+		encoding="utf-8",
+	)
+
+
+def get_printer_config_values() -> dict:
+	"""Obtiene la configuracion actual de impresion desde config/config_printer.json."""
+	return _load_printer_config()
+
+
+def update_printer_config_values(updates: dict) -> dict:
+	"""Actualiza parcialmente la configuracion de impresion y la persiste en config/config_printer.json."""
+	if not isinstance(updates, dict):
+		raise ValueError("Payload de configuracion de impresora invalido")
+
+	current = _load_printer_config()
+	method = current["method"]
+	network = dict(current["network"])
+	usb = dict(current["usb"])
+
+	if "method" in updates:
+		candidate_method = str(updates.get("method", "")).strip().upper()
+		if candidate_method not in {_PRINTER_METHOD_NETWORK, _PRINTER_METHOD_USB}:
+			raise ValueError("method debe ser NETWORK o USB")
+		method = candidate_method
+
+	if "network" in updates:
+		network_updates = updates.get("network")
+		if not isinstance(network_updates, dict):
+			raise ValueError("network debe ser un objeto")
+
+		if "host" in network_updates:
+			host = str(network_updates.get("host", "")).strip()
+			if not host:
+				raise ValueError("network.host no puede estar vacio")
+			network["host"] = host
+
+		if "port" in network_updates:
+			port_value = network_updates.get("port")
+			if port_value is None:
+				raise ValueError("network.port debe ser un entero")
+			try:
+				port = int(port_value)
+			except (TypeError, ValueError):
+				raise ValueError("network.port debe ser un entero")
+			if port < 1 or port > 65535:
+				raise ValueError("network.port debe estar entre 1 y 65535")
+			network["port"] = port
+
+		if "timeout" in network_updates:
+			timeout_value = network_updates.get("timeout")
+			if timeout_value is None:
+				raise ValueError("network.timeout debe ser un entero")
+			try:
+				timeout = int(timeout_value)
+			except (TypeError, ValueError):
+				raise ValueError("network.timeout debe ser un entero")
+			if timeout < 1:
+				raise ValueError("network.timeout debe ser mayor o igual a 1")
+			network["timeout"] = timeout
+
+	if "usb" in updates:
+		usb_updates = updates.get("usb")
+		if not isinstance(usb_updates, dict):
+			raise ValueError("usb debe ser un objeto")
+
+		if "mode" in usb_updates:
+			usb_mode = str(usb_updates.get("mode", "")).strip().upper()
+			if usb_mode != "WINDOWS_DEFAULT":
+				raise ValueError("usb.mode actualmente solo soporta WINDOWS_DEFAULT")
+			usb["mode"] = usb_mode
+
+		if "printer_name" in usb_updates:
+			usb["printer_name"] = str(usb_updates.get("printer_name", "") or "").strip()
+
+	new_data = {
+		"method": method,
+		"network": {
+			"host": str(network.get("host", "")).strip(),
+			"port": int(network.get("port", 9100)),
+			"timeout": int(network.get("timeout", 10)),
+		},
+		"usb": {
+			"mode": str(usb.get("mode", "WINDOWS_DEFAULT") or "WINDOWS_DEFAULT").strip().upper(),
+			"printer_name": str(usb.get("printer_name", "") or "").strip(),
+		},
+	}
+
+	_save_printer_config(new_data)
+	return _load_printer_config()
+
+
+def _imprimir_ticket_network(
+	ticket_bytes: bytes,
+	copias: int,
+	tipo_ticket: str,
+	network_cfg: dict,
+) -> tuple[bool, str]:
+	host = str(network_cfg.get("host", "")).strip()
+	port = int(network_cfg.get("port", 9100))
+	timeout = int(network_cfg.get("timeout", 10))
+	copias = max(1, int(copias))
+
+	if not host:
+		return False, "PRINTER_HOST no esta configurado"
+
+	impresora = None
+	try:
+		impresora = Network(host=host, port=port, timeout=timeout)
+		for _ in range(copias):
+			encabezado_path = _obtener_encabezado_ticket(tipo_ticket)
+			_imprimir_encabezado_ticket(impresora, encabezado_path)
+			impresora._raw(ticket_bytes)
+		return True, f"Ticket enviado a impresora ({copias} copia(s)) por RED"
+	except Exception as exc:
+		return False, f"No se pudo imprimir en red: {exc}"
+	finally:
+		if impresora is not None:
+			try:
+				impresora.close()
+			except Exception:
+				pass
+
+
+def _imprimir_tickets_network(
+	ticket_lote: Sequence[bytes],
+	tipo_ticket: str,
+	network_cfg: dict,
+) -> tuple[bool, str]:
+	host = str(network_cfg.get("host", "")).strip()
+	port = int(network_cfg.get("port", 9100))
+	timeout = int(network_cfg.get("timeout", 10))
+
+	if not host:
+		return False, "PRINTER_HOST no esta configurado"
+
+	lote = [tb for tb in ticket_lote if tb]
+	if not lote:
+		return False, "No hay tickets para imprimir"
+
+	impresora = None
+	try:
+		impresora = Network(host=host, port=port, timeout=timeout)
+		encabezado_path = _obtener_encabezado_ticket(tipo_ticket)
+		for ticket_bytes in lote:
+			_imprimir_encabezado_ticket(impresora, encabezado_path)
+			impresora._raw(ticket_bytes)
+		return True, f"Tickets enviados a impresora ({len(lote)} ticket(s)) por RED"
+	except Exception as exc:
+		return False, f"No se pudo imprimir en red: {exc}"
+	finally:
+		if impresora is not None:
+			try:
+				impresora.close()
+			except Exception:
+				pass
+
+
+def _build_usb_windows_printer(usb_cfg: dict):
+	if os.name != "nt":
+		raise RuntimeError("La impresion USB tipo WINDOWS_DEFAULT solo esta soportada en Windows")
+
+	win32_raw_cls = getattr(escpos_printer, "Win32Raw", None)
+	if win32_raw_cls is None:
+		raise RuntimeError("No esta disponible Win32Raw. Verifique pywin32 en el entorno de Windows")
+
+	printer_name = str(usb_cfg.get("printer_name", "") or "").strip() or None
+	return win32_raw_cls(printer_name=printer_name)
+
+
+def _imprimir_ticket_usb_windows(
+	ticket_bytes: bytes,
+	copias: int,
+	tipo_ticket: str,
+	usb_cfg: dict,
+) -> tuple[bool, str]:
+	copias = max(1, int(copias))
+	impresora = None
+	try:
+		impresora = _build_usb_windows_printer(usb_cfg)
+		impresora.open(job_name="estacionamientos-ticket")
+		for _ in range(copias):
+			encabezado_path = _obtener_encabezado_ticket(tipo_ticket)
+			_imprimir_encabezado_ticket(impresora, encabezado_path)
+			impresora._raw(ticket_bytes)
+		return True, f"Ticket enviado a impresora ({copias} copia(s)) por USB"
+	except Exception as exc:
+		return False, f"No se pudo imprimir por USB Windows: {exc}"
+	finally:
+		if impresora is not None:
+			try:
+				impresora.close()
+			except Exception:
+				pass
+
+
+def _imprimir_tickets_usb_windows(
+	ticket_lote: Sequence[bytes],
+	tipo_ticket: str,
+	usb_cfg: dict,
+) -> tuple[bool, str]:
+	lote = [tb for tb in ticket_lote if tb]
+	if not lote:
+		return False, "No hay tickets para imprimir"
+
+	impresora = None
+	try:
+		impresora = _build_usb_windows_printer(usb_cfg)
+		impresora.open(job_name="estacionamientos-ticket-lote")
+		encabezado_path = _obtener_encabezado_ticket(tipo_ticket)
+		for ticket_bytes in lote:
+			_imprimir_encabezado_ticket(impresora, encabezado_path)
+			impresora._raw(ticket_bytes)
+		return True, f"Tickets enviados a impresora ({len(lote)} ticket(s)) por USB"
+	except Exception as exc:
+		return False, f"No se pudo imprimir por USB Windows: {exc}"
+	finally:
+		if impresora is not None:
+			try:
+				impresora.close()
+			except Exception:
+				pass
 
 
 def _texto_escpos(texto: str) -> bytes:
@@ -150,61 +450,36 @@ def imprimir_ticket_red(ticket_bytes: bytes, copias: int = 1, tipo_ticket: str =
 		copias: Numero de copias a imprimir
 		tipo_ticket: "entrada" o "salida" para seleccionar el encabezado correcto
 	"""
-	host = os.getenv("PRINTER_HOST", "192.168.1.130").strip()
-	port = int(os.getenv("PRINTER_PORT", "9100"))
-	timeout = int(os.getenv("PRINTER_TIMEOUT", "10"))
-	copias = max(1, int(copias))
-
-	if not host:
-		return False, "PRINTER_HOST no esta configurado"
-
-	impresora = None
-	try:
-		impresora = Network(host=host, port=port, timeout=timeout)
-		for _ in range(copias):
-			encabezado_path = _obtener_encabezado_ticket(tipo_ticket)
-			_imprimir_encabezado_ticket(impresora, encabezado_path)
-			impresora._raw(ticket_bytes)
-		return True, f"Ticket enviado a impresora ({copias} copia(s))"
-	except Exception as exc:
-		return False, f"No se pudo imprimir en red: {exc}"
-	finally:
-		if impresora is not None:
-			try:
-				impresora.close()
-			except Exception:
-				pass
+	config = _load_printer_config()
+	return _imprimir_ticket_network(ticket_bytes, copias, tipo_ticket, config["network"])
 
 
 def imprimir_tickets_red(ticket_lote: Sequence[bytes], tipo_ticket: str = "salida") -> tuple[bool, str]:
 	"""Imprime varios tickets en una sola sesion de impresora para mayor confiabilidad."""
-	host = os.getenv("PRINTER_HOST", "192.168.1.130").strip()
-	port = int(os.getenv("PRINTER_PORT", "9100"))
-	timeout = int(os.getenv("PRINTER_TIMEOUT", "10"))
+	config = _load_printer_config()
+	return _imprimir_tickets_network(ticket_lote, tipo_ticket, config["network"])
 
-	if not host:
-		return False, "PRINTER_HOST no esta configurado"
 
-	lote = [tb for tb in ticket_lote if tb]
-	if not lote:
-		return False, "No hay tickets para imprimir"
+def imprimir_ticket(ticket_bytes: bytes, copias: int = 1, tipo_ticket: str = "salida") -> tuple[bool, str]:
+	"""Imprime un ticket usando el metodo configurado en config/config_printer.json."""
+	config = _load_printer_config()
+	method = config["method"]
 
-	impresora = None
-	try:
-		impresora = Network(host=host, port=port, timeout=timeout)
-		encabezado_path = _obtener_encabezado_ticket(tipo_ticket)
-		for ticket_bytes in lote:
-			_imprimir_encabezado_ticket(impresora, encabezado_path)
-			impresora._raw(ticket_bytes)
-		return True, f"Tickets enviados a impresora ({len(lote)} ticket(s))"
-	except Exception as exc:
-		return False, f"No se pudo imprimir en red: {exc}"
-	finally:
-		if impresora is not None:
-			try:
-				impresora.close()
-			except Exception:
-				pass
+	if method == _PRINTER_METHOD_USB:
+		return _imprimir_ticket_usb_windows(ticket_bytes, copias, tipo_ticket, config["usb"])
+
+	return _imprimir_ticket_network(ticket_bytes, copias, tipo_ticket, config["network"])
+
+
+def imprimir_tickets(ticket_lote: Sequence[bytes], tipo_ticket: str = "salida") -> tuple[bool, str]:
+	"""Imprime varios tickets usando el metodo configurado en config/config_printer.json."""
+	config = _load_printer_config()
+	method = config["method"]
+
+	if method == _PRINTER_METHOD_USB:
+		return _imprimir_tickets_usb_windows(ticket_lote, tipo_ticket, config["usb"])
+
+	return _imprimir_tickets_network(ticket_lote, tipo_ticket, config["network"])
 
 
 def generar_ticket_salida_prueba(
@@ -217,6 +492,7 @@ def generar_ticket_salida_prueba(
 	cajero: str = "SISTEMA",
 	metodo_pago: str = "Efectivo",
 	etiqueta: Optional[str] = None,
+	leyenda_reimpresion: Optional[str] = None,
 ) -> bytes:
 	"""Genera un ticket de salida de prueba con comandos ESC/POS."""
 	fecha_entrada = fecha_entrada or datetime.now()
@@ -262,6 +538,8 @@ def generar_ticket_salida_prueba(
 	buffer += align_center
 	buffer += _texto_escpos("--------------------------------\n")
 	buffer += _texto_escpos("Gracias por su preferencia\n")
+	if leyenda_reimpresion:
+		buffer += _texto_escpos(f"{leyenda_reimpresion}\n")
 	buffer += _texto_escpos("--------------------------------\n")
 	buffer += _texto_escpos("\n")
 	buffer += _texto_escpos("\n")
@@ -277,6 +555,7 @@ def generar_ticket_entrada_prueba(
 	fecha_entrada: Optional[datetime] = None,
 	tarifa_nombre: str = "Tarifa General",
 	cajero: str = "SISTEMA",
+	leyenda_reimpresion: Optional[str] = None,
 ) -> bytes:
 	"""Genera un ticket de entrada de prueba con comandos ESC/POS."""
 	fecha_entrada = fecha_entrada or datetime.now()
@@ -326,6 +605,8 @@ def generar_ticket_entrada_prueba(
 
 	buffer += align_center
 	buffer += _texto_escpos("--------------------------------\n")
+	if leyenda_reimpresion:
+		buffer += _texto_escpos(f"{leyenda_reimpresion}\n")
 	buffer += _texto_escpos("Conserve este ticket\n")
 	buffer += _texto_escpos("para realizar su salida\n")
 	buffer += _texto_escpos("--------------------------------\n")

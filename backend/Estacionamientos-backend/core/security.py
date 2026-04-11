@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timedelta, timezone
 from fastapi import Depends, HTTPException
 from jose import JWTError, jwt
@@ -9,9 +10,11 @@ from database import get_db
 from models.usuario import Usuario
 
 # Configuración
-SECRET_KEY = "nueva_super_clave"  # luego pásala a .env
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "").strip()
+if not SECRET_KEY:
+    raise ValueError("JWT_SECRET_KEY no esta configurada en variables de entorno")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")

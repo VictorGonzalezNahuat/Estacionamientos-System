@@ -13,11 +13,84 @@ from models.history_estacionamiento import HistoryEstacionamiento
 from models.turno import Turno
 from models.usuario import Usuario
 from printer.corte_pdf import generar_pdf_corte_caja
-from printer.print import generar_ticket_corte_caja, imprimir_ticket_red
-from schemas.corte_caja import CorteCajaCreate, CorteCajaResponse
+from printer.print import generar_ticket_corte_caja, imprimir_ticket
+from schemas.corte_caja import CorteCajaCreate, CorteCajaResumenResponse, CorteCajaResponse
 
 
 router = APIRouter()
+
+
+def _obtener_historial_para_corte(
+    turno_id: int,
+    current_user: Usuario,
+    db: Session,
+):
+    turno = db.query(Turno).filter(Turno.id == turno_id).first()
+
+    if not turno:
+        raise HTTPException(status_code=404, detail="Turno no encontrado")
+
+    if turno.encargado_id != current_user.id and current_user.rol != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="No tiene permiso para hacer corte de este turno"
+        )
+
+    if turno.estado != "pendiente_corte":
+        raise HTTPException(
+            status_code=400,
+            detail=f"El turno debe estar en estado 'pendiente_corte', actualmente está en '{turno.estado}'"
+        )
+
+    corte_existente = db.query(CorteCaja).filter(CorteCaja.id_turno == turno_id).first()
+    if corte_existente:
+        raise HTTPException(
+            status_code=400,
+            detail="Ya existe un corte para este turno"
+        )
+
+    historial_turno = db.query(HistoryEstacionamiento).filter(
+        and_(
+            HistoryEstacionamiento.turno_id == turno_id,
+            HistoryEstacionamiento.corte_id == None,
+            HistoryEstacionamiento.cancelado == 0,
+        )
+    ).all()
+
+    return turno, historial_turno
+
+
+def _obtener_historial_informativo_turno(
+    turno_id: int,
+    current_user: Usuario,
+    db: Session,
+):
+    turno = db.query(Turno).filter(Turno.id == turno_id).first()
+
+    if not turno:
+        raise HTTPException(status_code=404, detail="Turno no encontrado")
+
+    if turno.encargado_id != current_user.id and current_user.rol != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="No tiene permiso para consultar este turno"
+        )
+
+    if turno.estado not in ("activo", "pendiente_corte"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"El turno debe estar en estado 'activo' o 'pendiente_corte', actualmente está en '{turno.estado}'"
+        )
+
+    historial_turno = db.query(HistoryEstacionamiento).filter(
+        and_(
+            HistoryEstacionamiento.turno_id == turno_id,
+            HistoryEstacionamiento.corte_id == None,
+            HistoryEstacionamiento.cancelado == 0,
+        )
+    ).all()
+
+    return turno, historial_turno
 
 
 @router.post("/", response_model=CorteCajaResponse)
@@ -41,42 +114,8 @@ def crear_corte_caja(
     
     turno_id = request.turno_id
     total_declarado = request.total_declarado
-    
-    # 1. Validar que el turno existe
-    turno = db.query(Turno).filter(Turno.id == turno_id).first()
-    
-    if not turno:
-        raise HTTPException(status_code=404, detail="Turno no encontrado")
-    
-    # 2. Validar que el turno pertenece al usuario actual (o es admin)
-    if turno.encargado_id != current_user.id and current_user.rol != "admin":
-        raise HTTPException(
-            status_code=403,
-            detail="No tiene permiso para hacer corte de este turno"
-        )
-    
-    # 3. Validar que el turno está en estado "pendiente_corte"
-    if turno.estado != "pendiente_corte":
-        raise HTTPException(
-            status_code=400,
-            detail=f"El turno debe estar en estado 'pendiente_corte', actualmente está en '{turno.estado}'"
-        )
-    
-    # 4. Validar que no existe un corte previo para este turno
-    corte_existente = db.query(CorteCaja).filter(CorteCaja.id_turno == turno_id).first()
-    if corte_existente:
-        raise HTTPException(
-            status_code=400,
-            detail="Ya existe un corte para este turno"
-        )
-    
-    # 5. Obtener historial del turno (registros sin corte aún asignado)
-    historial_turno = db.query(HistoryEstacionamiento).filter(
-        and_(
-            HistoryEstacionamiento.turno_id == turno_id,
-            HistoryEstacionamiento.corte_id == None
-        )
-    ).all()
+
+    turno, historial_turno = _obtener_historial_para_corte(turno_id, current_user, db)
     
     detalle_movimientos = []
     for movimiento in historial_turno:
@@ -89,13 +128,13 @@ def crear_corte_caja(
             "pagado": bool(movimiento.pagado),
         })
 
-    # 6. Calcular totales
+    # 2. Calcular totales
     total_calculado = sum(float(h.importe) for h in historial_turno)
     total_efectivo = sum(float(h.importe) for h in historial_turno if h.metodo_pago == "efectivo")
     total_tarjeta = sum(float(h.importe) for h in historial_turno if h.metodo_pago == "tarjeta")
     diferencia = total_declarado - total_calculado
     
-    # 7. Crear registro de corte_caja
+    # 3. Crear registro de corte_caja
     nuevo_corte = CorteCaja(
         id_turno=turno_id,
         fecha_inicio=turno.fecha,
@@ -113,15 +152,16 @@ def crear_corte_caja(
     db.flush()  # Para obtener el ID del corte sin hacer commit aún
     corte_id = nuevo_corte.id
     
-    # 8. Actualizar registros de historia con el corte_id
+    # 4. Actualizar registros de historia con el corte_id
     db.query(HistoryEstacionamiento).filter(
         and_(
             HistoryEstacionamiento.turno_id == turno_id,
-            HistoryEstacionamiento.corte_id == None
+            HistoryEstacionamiento.corte_id == None,
+            HistoryEstacionamiento.cancelado == 0,
         )
     ).update({HistoryEstacionamiento.corte_id: corte_id})
     
-    # 9. Cambiar estado del turno a "cortado"
+    # 5. Cambiar estado del turno a "cortado"
     turno.estado = "cortado"
     
     db.commit()
@@ -149,7 +189,7 @@ def crear_corte_caja(
     ticket_corte_path = tickets_corte_dir / f"corte_{turno_id}_{corte_id}_{datetime.now():%Y%m%d_%H%M%S}.bin"
     ticket_corte_path.write_bytes(ticket_bytes)
 
-    impreso_ok, impresion_mensaje = imprimir_ticket_red(ticket_bytes, tipo_ticket="corte")
+    impreso_ok, impresion_mensaje = imprimir_ticket(ticket_bytes, tipo_ticket="corte")
     if not impreso_ok:
         print(f"Error imprimiendo corte de caja | {impresion_mensaje}")
 
@@ -169,6 +209,27 @@ def crear_corte_caja(
     )
     
     return nuevo_corte
+
+
+@router.get("/turno/{turno_id}/resumen", response_model=CorteCajaResumenResponse)
+def obtener_resumen_corte_turno(
+    turno_id: int,
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Obtener el resumen informativo de un turno en activo o pendiente_corte."""
+
+    _, historial_turno = _obtener_historial_informativo_turno(turno_id, current_user, db)
+
+    total_efectivo = sum(float(h.importe) for h in historial_turno if h.metodo_pago == "efectivo")
+    total_tarjeta = sum(float(h.importe) for h in historial_turno if h.metodo_pago == "tarjeta")
+
+    return {
+        "turno_id": turno_id,
+        "total_efectivo": total_efectivo,
+        "total_tarjeta": total_tarjeta,
+        "total_total": total_efectivo + total_tarjeta,
+    }
 
 
 @router.get("/turno/{turno_id}", response_model=CorteCajaResponse)
@@ -198,8 +259,8 @@ def obtener_corte_turno(
 
 @router.get("/", response_model=list[CorteCajaResponse])
 def listar_cortes(
-    desde: date = None,
-    hasta: date = None,
+    desde: date | None = None,
+    hasta: date | None = None,
     current_user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -245,7 +306,8 @@ def descargar_pdf_corte(
         raise HTTPException(status_code=403, detail="No tiene permiso para descargar este reporte")
 
     historial_corte = db.query(HistoryEstacionamiento).filter(
-        HistoryEstacionamiento.corte_id == corte.id
+        HistoryEstacionamiento.corte_id == corte.id,
+        HistoryEstacionamiento.cancelado == 0,
     ).all()
 
     movimientos = []

@@ -22,6 +22,13 @@ type MiTurnoResponse = {
   hora_apertura?: string;
 };
 
+type ResumenCorteCajaResponse = {
+  turno_id: number;
+  total_efectivo: number;
+  total_tarjeta: number;
+  total_total: number;
+};
+
 const MENSAJE_ADVERTENCIA_TURNO_ABIERTO =
   'Hay vehículos con turno sin cerrar. Cierra el turno para poder Exportar, Imprimir o Generar Reportes';
 
@@ -94,6 +101,7 @@ export class CorteCaja implements OnInit {
 
           // 👇 aquí llamamos al endpoint único
           this.cargarHistorialFiltro(fecha, undefined, encargado);
+          this.cargarResumenCorteActual();
         },
         error: (err) => {
           console.error('Error obteniendo usuario actual', err);
@@ -101,8 +109,54 @@ export class CorteCaja implements OnInit {
           // Si falla usuario, igual cargamos solo por fecha
           const fecha = this.corteForm.get('fecha')?.value;
           this.cargarHistorialFiltro(fecha);
+          this.cargarResumenCorteActual();
         }
       });
+  }
+
+  private async cargarResumenCorteActual(): Promise<void> {
+    try {
+      const turno = await this.obtenerTurnoActual();
+      const turnoId = Number(turno?.turno_id);
+
+      if (!Number.isFinite(turnoId)) {
+        this.aplicarResumenCorte({
+          turno_id: 0,
+          total_efectivo: 0,
+          total_tarjeta: 0,
+          total_total: 0,
+        });
+        this.cdr.markForCheck();
+        return;
+      }
+
+      const resumen = await firstValueFrom(
+        this.http.get<ResumenCorteCajaResponse>(`${this.config.apiUrl}/corte-caja/turno/${turnoId}/resumen`)
+      );
+
+      this.aplicarResumenCorte(resumen);
+      this.cdr.markForCheck();
+    } catch (err) {
+      console.error('Error cargando resumen de corte por turno', err);
+      this.aplicarResumenCorte({
+        turno_id: 0,
+        total_efectivo: 0,
+        total_tarjeta: 0,
+        total_total: 0,
+      });
+      this.cdr.markForCheck();
+    }
+  }
+
+  private async obtenerTurnoActual(): Promise<MiTurnoResponse | null> {
+    try {
+      return await firstValueFrom(
+        this.http.get<MiTurnoResponse>(`${this.config.apiUrl}/turnos/mi-turno`)
+      );
+    } catch (err) {
+      console.error('Error obteniendo turno actual', err);
+      return null;
+    }
   }
 
 
@@ -215,8 +269,6 @@ export class CorteCaja implements OnInit {
         metodoPago: this.obtenerMetodoPago(item)
       });
     });
-
-    this.calcularTotales();
   }
 
   private formatearFecha(fecha: string): string {
@@ -302,12 +354,10 @@ export class CorteCaja implements OnInit {
     });
 
     this.registros.push(registro);
-    this.calcularTotales();
   }
 
   eliminarRegistro(index: number) {
     this.registros.removeAt(index);
-    this.calcularTotales();
   }
 
   ordenarAZ() {
@@ -319,36 +369,11 @@ export class CorteCaja implements OnInit {
     sorted.forEach(r => this.agregarRegistro(r));
   }
 
-  /* ===============================
-     CÁLCULOS
-  =============================== */
-
-  calcularTotales() {
-
-    const registros = this.registros.getRawValue();
-
-    const totals = registros.reduce(
-      (acc: { general: number; efectivo: number; tarjeta: number }, item: any) => {
-        const importe = Number(item.importe ?? 0);
-        const metodoPago = this.normalizarMetodoPago(item.metodoPago);
-
-        acc.general += importe;
-
-        if (metodoPago === 'tarjeta') {
-          acc.tarjeta += importe;
-        } else {
-          acc.efectivo += importe;
-        }
-
-        return acc;
-      },
-      { general: 0, efectivo: 0, tarjeta: 0 }
-    );
-
+  private aplicarResumenCorte(resumen: ResumenCorteCajaResponse): void {
     this.corteForm.patchValue({
-      totalGeneral: totals.general,
-      totalEfectivo: totals.efectivo,
-      totalTarjeta: totals.tarjeta
+      totalGeneral: Number(resumen.total_total ?? 0),
+      totalEfectivo: Number(resumen.total_efectivo ?? 0),
+      totalTarjeta: Number(resumen.total_tarjeta ?? 0)
     });
   }
 
@@ -380,9 +405,7 @@ export class CorteCaja implements OnInit {
     }
 
     try {
-      const turno = await firstValueFrom(
-        this.http.get<MiTurnoResponse>(`${this.config.apiUrl}/turnos/mi-turno`)
-      );
+      const turno = await this.obtenerTurnoActual();
 
       if (turno?.estado === 'abierto') {
         this.alertService.error('El turno debe cerrarse para realizar el corte de caja.');
@@ -462,31 +485,6 @@ export class CorteCaja implements OnInit {
 
   private obtenerMetodoPago(item: any): MetodoPagoHistorial {
     return item?.metodo_pago ?? item?.metodoPago ?? item?.tipo_pago ?? item?.payment_method ?? null;
-  }
-
-  private normalizarMetodoPago(value: MetodoPagoHistorial): 'efectivo' | 'tarjeta' {
-    const normalized = String(value ?? '')
-      .trim()
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
-
-    // Soporta variantes devueltas por backend: "TARJETA", "pago con tarjeta", "stripe", etc.
-    if (
-      normalized === '2'
-      || normalized.includes('tarjeta')
-      || normalized.includes('card')
-      || normalized.includes('credito')
-      || normalized.includes('debito')
-      || normalized.includes('stripe')
-      || normalized.includes('mercadopago')
-      || normalized.includes('mercado pago')
-      || normalized === 'mp'
-    ) {
-      return 'tarjeta';
-    }
-
-    return 'efectivo';
   }
 
   private async descargarPdfCorte(corteId: number): Promise<void> {

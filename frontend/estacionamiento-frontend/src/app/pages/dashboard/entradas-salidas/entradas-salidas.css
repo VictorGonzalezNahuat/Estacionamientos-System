@@ -481,6 +481,13 @@ button:disabled {
   width: 100%;
 }
 
+.topbar-estado--critical {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.28), rgba(127, 29, 29, 0.18));
+  border-color: rgba(248, 113, 113, 0.5);
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.18);
+  flex-wrap: wrap;
+}
+
 .topbar-tarifa {
   background: linear-gradient(135deg, rgba(251, 191, 36, 0.25), rgba(251, 191, 36, 0.15));
   backdrop-filter: blur(15px);
@@ -531,6 +538,35 @@ button:disabled {
 
 .topbar-tarifa .topbar-item strong {
   color: rgba(251, 191, 36, 1);
+}
+
+.topbar-estado--critical .topbar-label,
+.topbar-estado--critical .topbar-item strong {
+  color: rgba(254, 202, 202, 1);
+}
+
+.topbar-alerta-espacios {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(127, 29, 29, 0.36);
+  border: 1px solid rgba(248, 113, 113, 0.55);
+  color: rgba(254, 226, 226, 1);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.35px;
+  text-transform: uppercase;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.12);
+}
+
+.topbar-alerta-espacios__icon {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  flex: 0 0 auto;
 }
 
 .secondary-btn {

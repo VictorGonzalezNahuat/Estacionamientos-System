@@ -1,0 +1,145 @@
+<section class="cancelacion-page">
+	<div class="background-overlay"></div>
+
+	<div class="cancelacion-shell">
+		<header class="page-header">
+			<div>
+				<p class="eyebrow">Dashboard / Cancelacion de tickets</p>
+				<h1>Cancelacion de tickets retirados</h1>
+				<p class="page-copy">
+					Cancela tickets por historial id con motivo obligatorio y consulta el historial de cancelaciones con filtros.
+				</p>
+			</div>
+			<div class="header-badge">
+				<span>{{ countLabel }}</span>
+				<strong>{{ lastUpdated() }}</strong>
+			</div>
+		</header>
+
+		<section class="controls-card">
+			<div class="control-group control-group--id">
+				<label for="ticket-id">Id del ticket</label>
+				<input
+					id="ticket-id"
+					type="number"
+					min="1"
+					class="field-input"
+					placeholder="Ej. 1250"
+					[value]="ticketId()"
+					(input)="onTicketIdInput($event)"
+				/>
+			</div>
+
+			<div class="control-group control-group--action">
+				<label>&nbsp;</label>
+				<button type="button" class="primary-btn danger" [disabled]="cancelando()" (click)="cancelarTicket()">
+					{{ cancelando() ? 'Cancelando...' : 'Cancelar ticket' }}
+				</button>
+			</div>
+
+			<div class="control-group control-group--filtro">
+				<label for="placa">Placa</label>
+				<input
+					id="placa"
+					type="text"
+					class="field-input"
+					placeholder="ABC123"
+					[value]="placa()"
+					(input)="onPlacaInput($event)"
+				/>
+			</div>
+
+			<div class="control-group control-group--motivo">
+				<label for="motivo">Motivo de cancelacion</label>
+				<textarea
+					id="motivo"
+					class="field-textarea"
+					rows="3"
+					placeholder="Escribe el motivo de la cancelacion"
+					[value]="motivo()"
+					(input)="onMotivoInput($event)"
+				></textarea>
+			</div>
+
+			<div class="control-group control-group--filtro">
+				<label for="desde">Desde</label>
+				<input id="desde" type="date" class="field-input" [value]="desde()" (input)="onDesdeInput($event)" />
+			</div>
+
+			<div class="control-group control-group--filtro">
+				<label for="hasta">Hasta</label>
+				<input id="hasta" type="date" class="field-input" [value]="hasta()" (input)="onHastaInput($event)" />
+			</div>
+
+			<div class="control-group control-group--filtro">
+				<label for="cancelado-por">Cancelado por (id)</label>
+				<input
+					id="cancelado-por"
+					type="number"
+					min="0"
+					class="field-input"
+					placeholder="Id de usuario"
+					[value]="canceladoPor()"
+					(input)="onCanceladoPorInput($event)"
+				/>
+			</div>
+
+			<div class="control-group control-group--action-secondary">
+				<label>&nbsp;</label>
+				<div class="actions-inline">
+					<button type="button" class="primary-btn" [disabled]="cargando()" (click)="buscarCancelados()">
+						{{ cargando() ? 'Consultando...' : 'Buscar' }}
+					</button>
+					<button type="button" class="secondary-btn" [disabled]="cargando()" (click)="limpiarFiltros()">
+						Limpiar
+					</button>
+				</div>
+			</div>
+		</section>
+
+		<section class="table-card">
+			@if (cargando()) {
+				<div class="empty-state">
+					<h2>Cargando tickets cancelados...</h2>
+					<p>Estamos consultando la informacion en el servidor.</p>
+				</div>
+			} @else if (rows().length > 0) {
+				<div class="table-wrapper">
+					<table>
+						<thead>
+							<tr>
+								<th>Historial ID</th>
+								<th>Placa</th>
+								<th>Motivo</th>
+								<th>Cancelado por</th>
+								<th>Fecha salida</th>
+								<th>Hora salida</th>
+								<th>Importe</th>
+								<th>Cancelado en</th>
+							</tr>
+						</thead>
+						<tbody>
+							@for (row of rows(); track row.historialId + '-' + row.canceladoEn + '-' + row.placa) {
+								<tr>
+									<td>{{ row.historialId }}</td>
+									<td class="cell-plate">{{ row.placa }}</td>
+									<td class="cell-motivo">{{ row.motivo }}</td>
+									<td>{{ row.canceladoPor }}</td>
+									<td>{{ row.fechaSalida }}</td>
+									<td>{{ row.horaSalida }}</td>
+									<td class="cell-amount">{{ row.importe }}</td>
+									<td>{{ row.canceladoEn }}</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			} @else {
+				<div class="empty-state">
+					<h2>No hay tickets cancelados para mostrar</h2>
+					<p>Cuando el backend devuelva resultados con los filtros actuales, apareceran en el grid.</p>
+				</div>
+			}
+		</section>
+	</div>
+</section>

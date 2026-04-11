@@ -537,6 +537,13 @@
         </button>
         }
 
+        @if (alert.type === 'error' && alert.secondaryText && alert.onSecondary) {
+        <button class="alert-button btn-error-secondary"
+                (click)="alertService.handleErrorSecondaryAction()">
+          {{ alert.secondaryText }}
+        </button>
+        }
+
     <!-- BOTÓN GLOBAL (para SUCCESS / ERROR / INFO) -->
         @if (alert.type !== 'confirm' && alert.type !== 'session-restart' && alert.type !== 'password-input' && alert.type !== 'reset-password-step1' && alert.type !== 'reset-password-step2' && alert.type !== 'pending-messages' && alert.type !== 'payment-method-select' && alert.type !== 'corte-caja-preview' && alert.type !== 'corte-caja-status' && alert.type !== 'fiscal-customer-input' && alert.type !== 'facturacion-ticket-input') {
     <button class="alert-button"

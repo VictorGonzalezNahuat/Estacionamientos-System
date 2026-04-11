@@ -1,0 +1,6 @@
+*** AVISO TERMINAL PLUMA ***
+Fecha: 2026-04-09T23:36:51
+Modo: active
+Mensaje: Se ha configurado el turno 88 del encargado Administrador. Pluma lista para recibir carros
+Turno: {"id": 88, "encargado_id": 2, "encargado_nombre": "Administrador", "estado": "activo"}
+*****************************

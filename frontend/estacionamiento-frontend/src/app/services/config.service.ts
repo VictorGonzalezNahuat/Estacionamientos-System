@@ -52,6 +52,29 @@ export interface CortesConfigUpdate extends CortesConfigResponse {
   SMTP_PASSWORD: string;
 }
 
+export interface PrinterNetworkConfig {
+  host: string;
+  port: number;
+  timeout: number;
+}
+
+export interface PrinterUsbConfig {
+  mode: string;
+  printer_name: string;
+}
+
+export interface PrinterConfigResponse {
+  method: string;
+  network: PrinterNetworkConfig;
+  usb: PrinterUsbConfig;
+}
+
+export interface PrinterConfigUpdate {
+  method: string;
+  network: PrinterNetworkConfig;
+  usb: PrinterUsbConfig;
+}
+
 export interface RuntimeConfig {
   apiUrl: string;
   RECAPTCHA_SITE_KEY?: string;
@@ -131,5 +154,13 @@ export class ConfigService {
 
   updateCortesConfig(config: CortesConfigUpdate): Observable<CortesConfigResponse> {
     return this.http.patch<CortesConfigResponse>(`${this.apiUrl}/config/cortes`, config);
+  }
+
+  getPrinterConfig(): Observable<PrinterConfigResponse> {
+    return this.http.get<PrinterConfigResponse>(`${this.apiUrl}/config/printer`);
+  }
+
+  updatePrinterConfig(config: PrinterConfigUpdate): Observable<PrinterConfigResponse> {
+    return this.http.patch<PrinterConfigResponse>(`${this.apiUrl}/config/printer`, config);
   }
 }

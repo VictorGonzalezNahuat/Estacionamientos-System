@@ -126,6 +126,17 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
       error: () => this.alert.error('Error cargando estado del estacionamiento')
     });
   }
+
+  espaciosDisponibles(): number {
+    const total = Number(this.estado()?.total_espacios ?? 0);
+    const ocupados = Number(this.estado()?.espacios_ocupados ?? 0);
+
+    return Math.max(total - ocupados, 0);
+  }
+
+  mostrarAlertaEspacios(): boolean {
+    return this.espaciosDisponibles() <= 5;
+  }
   cargarDatos() {
     this.http.get(`${this.config.apiUrl}/auth/me`)
       .subscribe(res => this.user.set(res));
@@ -154,6 +165,16 @@ export class EntradasSalidas implements OnInit, OnDestroy, AfterViewInit {
     const placa = this.form.value.placa?.toUpperCase().trim();
 
     if (!placa) return;
+
+    if (this.espaciosDisponibles() === 0) {
+      this.alert.error(
+        'Ya no hay espacio en el estacionamiento',
+        () => this.focusAndSelectPlaca(),
+        'ESTE TICKET ES DE SALIDA',
+        () => void this.solicitarSalidaSegunMetodo(placa, true)
+      );
+      return;
+    }
 
     this.loading.set(true);
     const yaDentro = this.estacionados().some(auto => (auto?.placa ?? '').toUpperCase() === placa);

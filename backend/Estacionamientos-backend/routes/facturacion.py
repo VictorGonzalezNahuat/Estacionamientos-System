@@ -65,6 +65,9 @@ def _validate_ticket_for_facturacion(
     if not bool(history.pagado):
         raise HTTPException(status_code=400, detail="El movimiento historico no esta pagado")
 
+    if int(getattr(history, "cancelado", 0)) == 1:
+        raise HTTPException(status_code=409, detail="El movimiento historico esta cancelado y no puede facturarse")
+
     if not history.placa or not history.fecha_salida or not history.hora_salida:
         raise HTTPException(status_code=400, detail="El ticket historico no tiene datos suficientes para facturacion")
 
@@ -284,6 +287,7 @@ def upsert_fiscal_customer(payload: FiscalCustomerUpsertRequest, request: Reques
     return _public_fiscal_customer_response(customer)
 
 
+# TODO(refactor): Extraer este flujo a un servicio de aplicación para separar capa HTTP de reglas de negocio/persistencia.
 @router.post("/emitir", response_model=InvoiceEmitResponse)
 def emitir_factura(payload: InvoiceEmitRequest, request: Request, db: Session = Depends(get_db)):
     enforce_rate_limit_or_raise(
@@ -369,6 +373,7 @@ def emitir_factura(payload: InvoiceEmitRequest, request: Request, db: Session = 
         },
     )
 
+    # TODO(refactor): Delimitar transacciones por etapa (request, emisión, documento, eventos) para mejorar rollback/reintentos.
     try:
         provider = get_invoice_provider(invoice_request.provider_name)
         provider_result = provider.issue_invoice(
@@ -465,6 +470,7 @@ def emitir_factura(payload: InvoiceEmitRequest, request: Request, db: Session = 
                 },
             )
 
+    # TODO(cleanup): Reemplazar excepción genérica por excepciones de dominio/integración para respuestas más precisas.
     except Exception as exc:
         invoice_request.attempts += 1
         invoice_request.status = InvoiceRequest.STATUS_FAILED
@@ -501,6 +507,7 @@ def emitir_factura(payload: InvoiceEmitRequest, request: Request, db: Session = 
     )
 
 
+# TODO(refactor): Consolidar validación de token y carga de `invoice_request` en una dependencia reusable.
 @router.get("/solicitudes/{invoice_request_id}", response_model=InvoiceRequestStatusResponse)
 def obtener_estado_solicitud(
     invoice_request_id: int,
@@ -598,6 +605,7 @@ def cancelar_factura(
     )
 
 
+# TODO(cleanup): Evitar duplicación entre endpoints XML/PDF extrayendo helper común para autorización y descarga.
 @router.get("/solicitudes/{invoice_request_id}/xml")
 def obtener_xml_factura(
     invoice_request_id: int,
@@ -624,6 +632,7 @@ def obtener_xml_factura(
     )
 
 
+# TODO(cleanup): Evitar duplicación entre endpoints XML/PDF extrayendo helper común para autorización y descarga.
 @router.get("/solicitudes/{invoice_request_id}/pdf")
 def obtener_pdf_factura(
     invoice_request_id: int,

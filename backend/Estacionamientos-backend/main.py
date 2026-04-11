@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -5,7 +7,7 @@ from core.sync_scheduler import start_sync_scheduler, stop_sync_scheduler
 from database import engine
 
 # Routers
-from routes import auth, configuracion, cortes_caja, current_estacionamientos, history_estacionamientos, mensajes, state_estacionamientos, sync, tarifas, turnos, usuarios, pagos, facturacion
+from routes import auth, configuracion, cortes_caja, current_estacionamientos, history_estacionamientos, mensajes, state_estacionamientos, sync, tarifas, turnos, usuarios, pagos, facturacion, terminal_pluma
 
 # from app.routes import usuarios, tarifas, turnos
 
@@ -14,6 +16,20 @@ app = FastAPI(
     description="API para gestión de estacionamiento",
     version="0.1.0",
 )
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.getenv(name, str(default)).strip().lower()
+    return raw in {"1", "true", "yes", "on"}
+
+
+def _env_list(name: str, default_csv: str) -> list[str]:
+    raw = os.getenv(name, default_csv)
+    return [item.strip() for item in raw.split(",") if item.strip()]
+
+
+cors_allow_origins = _env_list("CORS_ALLOW_ORIGINS", "http://localhost:4200")
+cors_allow_credentials = _env_bool("CORS_ALLOW_CREDENTIALS", False)
 
 
 @app.on_event("startup")
@@ -25,11 +41,11 @@ async def on_startup() -> None:
 async def on_shutdown() -> None:
     await stop_sync_scheduler()
 
-# CORS (luego Angular lo va a agradecer)
+# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # luego se restringe
-    allow_credentials=True,
+    allow_origins=cors_allow_origins,
+    allow_credentials=cors_allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -59,3 +75,4 @@ app.include_router(sync.router, prefix="/sync", tags=["Sync"])
 app.include_router(configuracion.router, prefix="/config", tags=["Configuracion"])
 app.include_router(pagos.router, prefix="/pagos", tags=["Pagos"])
 app.include_router(facturacion.router, prefix="/facturacion", tags=["Facturacion"])
+app.include_router(terminal_pluma.router, prefix="/terminal/pluma", tags=["TerminalPluma"])

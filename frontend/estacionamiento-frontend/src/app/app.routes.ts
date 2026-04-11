@@ -8,6 +8,10 @@ import { encargadosGuard } from './guards/encargados-guard';
 import { corteCajaGuard } from './guards/corte-caja-guard';
 import { configuracionGuard } from './guards/configuracion-guard';
 import { configuracionCortesGuard } from './guards/configuracion-cortes-guard';
+import { reimpresionTicketsGuard } from './guards/reimpresion-tickets-guard';
+import { ConfiguracionImpresora } from './pages/dashboard/configuracion-impresora/configuracion-impresora';
+import { configuracionImpresoraGuard } from './guards/configuracion-impresora-guard';
+import { cancelacionTicketsGuard } from './guards/cancelacion-tickets-guard';
 
 export const routes: Routes = [
   {
@@ -66,6 +70,21 @@ export const routes: Routes = [
         path: 'configuracion-cortes',
         loadComponent: () => import('./pages/dashboard/configuracion-cortes/configuracion-cortes').then(m => m.ConfiguracionCortes),
         canActivate: [configuracionCortesGuard]
+      },
+      {
+        path: 'reimpresion-tickets',
+        loadComponent: ()=> import('./pages/dashboard/reimpresion-tickets/reimpresion-tickets').then(m=> m.ReimpresionTickets),
+        canActivate: [reimpresionTicketsGuard]
+      },
+      {
+        path: 'configuracion-impresora',
+        loadComponent: () => import('./pages/dashboard/configuracion-impresora/configuracion-impresora').then(m=>m.ConfiguracionImpresora),
+        canActivate: [configuracionImpresoraGuard]
+      },
+      {
+        path: 'cancelacion-tickets',
+        loadComponent: () => import('./pages/dashboard/cancelacion-tickets/cancelacion-tickets').then(m=> m.CancelacionTickets),
+        canActivate: [cancelacionTicketsGuard]
       }
 
     ]

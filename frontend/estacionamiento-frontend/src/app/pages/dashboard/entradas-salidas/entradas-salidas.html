@@ -5,13 +5,28 @@
   <div class="layout">
     <!-- TOPBAR: ESTADO DEL ESTACIONAMIENTO (ANCHO COMPLETO) -->
     @if (estado()) {
-    <div class="topbar-estado">
+    <div class="topbar-estado" [class.topbar-estado--critical]="mostrarAlertaEspacios()">
         <div class="topbar-label">Estado del Estacionamiento:</div>
         <div class="topbar-content">
             <span class="topbar-item"><strong>Total:</strong> {{ estado()?.total_espacios }}</span>
             <span class="topbar-item"><strong>Ocupados:</strong> {{ estado()?.espacios_ocupados }}</span>
-            <span class="topbar-item"><strong>Disponibles:</strong> {{ estado()?.total_espacios - estado()?.espacios_ocupados }}</span>
+            <span class="topbar-item"><strong>Disponibles:</strong> {{ espaciosDisponibles() }}</span>
         </div>
+
+        @if (mostrarAlertaEspacios()) {
+        <div class="topbar-alerta-espacios" role="status" aria-live="polite">
+            <svg class="topbar-alerta-espacios__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M12 3 1 21h22L12 3Zm0 5.5c.69 0 1.25.56 1.25 1.25v4.5a1.25 1.25 0 1 1-2.5 0v-4.5c0-.69.56-1.25 1.25-1.25Zm0 10.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z" />
+            </svg>
+            <span>
+                @if (espaciosDisponibles() === 0) {
+                Ya no quedan espacios disponibles
+                } @else {
+                Solo quedan {{ espaciosDisponibles() }} espacios disponibles
+                }
+            </span>
+        </div>
+        }
     </div>
     }
 

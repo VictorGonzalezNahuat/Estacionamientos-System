@@ -15,3 +15,7 @@ class HistoryEstacionamientoBase(BaseModel):
     importe: float
     corte_id: Optional[int] = None
 
+
+class CancelarTicketHistorialRequest(BaseModel):
+    motivo: str = Field(min_length=1, max_length=500)
+

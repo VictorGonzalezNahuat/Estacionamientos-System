@@ -1,5 +1,6 @@
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
 from core.datetime_utils import now_local_naive
 from core.security import get_current_user
@@ -16,6 +17,7 @@ from schemas.current_estacionamiento import CurrentEstacionamientoCreate
 
 
 router = APIRouter()
+REIMPRESION_LEYENDA = "Este ticket ha sido reimpreso desde el sistema"
 
 
 @router.post("/ingresar")
@@ -139,3 +141,59 @@ def obtener_estacionados(current_user: Usuario = Depends(get_current_user), db: 
         })
 
     return resultado
+
+
+@router.get("/reimpresion/ultimos")
+def obtener_ultimos_para_reimpresion(current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
+    _ = current_user
+    registros = db.query(CurrentEstacionamiento).order_by(desc(CurrentEstacionamiento.id)).limit(50).all()
+
+    return {
+        "data": [
+            {
+                "id": registro.id,
+                "encargado_id": registro.encargado_id,
+                "placa": registro.placa,
+                "tarifa_id": registro.tarifa_id,
+                "turno_id": registro.turno_id,
+                "fecha_entrada": registro.fecha_entrada,
+                "hora_entrada": registro.hora_entrada,
+                "updated_at": registro.updated_at,
+            }
+            for registro in registros
+        ]
+    }
+
+
+@router.post("/reimpresion/{estacionamiento_id}")
+def reimprimir_ticket_entrada(
+    estacionamiento_id: int,
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _ = current_user
+    registro = db.query(CurrentEstacionamiento).filter(CurrentEstacionamiento.id == estacionamiento_id).first()
+
+    if not registro:
+        raise HTTPException(status_code=404, detail="Registro de entrada no encontrado")
+
+    tarifa = db.query(Tarifa).filter(Tarifa.id == registro.tarifa_id).first()
+    encargado = db.query(Usuario).filter(Usuario.id == registro.encargado_id).first()
+
+    entrada_dt = datetime.combine(registro.fecha_entrada, registro.hora_entrada)
+    placa_ticket = registro.placa.strip().upper()
+    ticket_bytes = construir_ticket_entrada(
+        folio=f"ENT-{placa_ticket}-{entrada_dt:%Y%m%d%H%M%S}",
+        placa=placa_ticket,
+        fecha_entrada=entrada_dt,
+        tarifa_nombre=getattr(tarifa, "nombre", "Tarifa General"),
+        cajero=getattr(encargado, "nombre", "SISTEMA"),
+        leyenda_reimpresion=REIMPRESION_LEYENDA,
+    )
+
+    impreso_ok, impresion_mensaje = imprimir_ticket_entrada(ticket_bytes)
+    return {
+        "mensaje": "Ticket de entrada reimpreso",
+        "ticket_impreso": impreso_ok,
+        "impresion_mensaje": impresion_mensaje,
+    }

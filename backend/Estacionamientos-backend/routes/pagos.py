@@ -43,6 +43,7 @@ def cancelar_pago(
             db=db,
             preferencia_id=preferencia_id,
             provider_name=payload.provider or _get_provider_name(),
+            current_user_id=current_user.id,
             motivo=payload.motivo,
         )
     )

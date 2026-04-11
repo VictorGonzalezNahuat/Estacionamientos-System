@@ -134,7 +134,7 @@ CREATE TABLE `fiscal_customers` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_fiscal_customers_rfc` (`rfc`),
   KEY `ix_fiscal_customers_id` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -473,7 +473,7 @@ CREATE TABLE `invoice_documents` (
   UNIQUE KEY `uq_invoice_documents_invoice_request_id` (`invoice_request_id`),
   KEY `ix_invoice_documents_uuid_fiscal` (`uuid_fiscal`),
   CONSTRAINT `fk_invoice_documents_invoice_request` FOREIGN KEY (`invoice_request_id`) REFERENCES `invoice_requests` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -516,7 +516,7 @@ CREATE TABLE `invoice_events` (
   KEY `ix_invoice_events_invoice_request_id` (`invoice_request_id`),
   KEY `ix_invoice_events_event_type` (`event_type`),
   CONSTRAINT `fk_invoice_events_invoice_request` FOREIGN KEY (`invoice_request_id`) REFERENCES `invoice_requests` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -597,7 +597,7 @@ CREATE TABLE `invoice_requests` (
   KEY `ix_invoice_requests_provider_invoice_id` (`provider_invoice_id`),
   KEY `ix_invoice_requests_access_token_expires_at` (`access_token_expires_at`),
   CONSTRAINT `fk_invoice_requests_fiscal_customer` FOREIGN KEY (`fiscal_customer_id`) REFERENCES `fiscal_customers` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -753,7 +753,7 @@ CREATE TABLE `sync_state` (
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_sync_state_table_name` (`table_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --

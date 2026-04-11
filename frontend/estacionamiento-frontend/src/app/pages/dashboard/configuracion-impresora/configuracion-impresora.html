@@ -1,0 +1,132 @@
+<div class="configuracion-impresora-container">
+	<div class="config-header">
+		<h1>Configuración de Impresora</h1>
+		<p>Define el método de impresión y parámetros de conexión para tickets y recibos.</p>
+	</div>
+
+	<div *ngIf="isLoading" class="loading-message">
+		<p>Cargando configuración de impresora...</p>
+	</div>
+
+	<form [formGroup]="configForm" *ngIf="!isLoading" class="config-form">
+		<section class="config-group">
+			<div class="config-group-header">
+				<h2>Método de impresión</h2>
+				<p>Selecciona si la salida se realizará por red o por impresora local USB.</p>
+			</div>
+
+			<div class="method-selector">
+				<label class="radio-chip" for="methodNetwork">
+					<input id="methodNetwork" type="radio" formControlName="method" value="NETWORK" />
+					<span>NETWORK</span>
+				</label>
+
+				<label class="radio-chip" for="methodUsb">
+					<input id="methodUsb" type="radio" formControlName="method" value="USB" />
+					<span>USB</span>
+				</label>
+			</div>
+		</section>
+
+		<section class="config-group" [class.disabled-group]="!isNetworkMethod()">
+			<div class="config-group-header">
+				<h2>Configuración de red</h2>
+				<p>Aplica cuando el método seleccionado es NETWORK.</p>
+			</div>
+
+			<div class="config-grid">
+				<div class="form-group full-width">
+					<label for="networkHost">Host:</label>
+					<input
+						id="networkHost"
+						type="text"
+						formControlName="network_host"
+						placeholder="Ej: 192.168.1.130"
+						class="form-control"
+						[disabled]="!isNetworkMethod()"
+						autocomplete="off"
+					/>
+				</div>
+
+				<div class="form-group">
+					<label for="networkPort">Puerto:</label>
+					<input
+						id="networkPort"
+						type="number"
+						min="1"
+						formControlName="network_port"
+						class="form-control"
+						[disabled]="!isNetworkMethod()"
+						inputmode="numeric"
+					/>
+				</div>
+
+				<div class="form-group">
+					<label for="networkTimeout">Timeout (segundos):</label>
+					<input
+						id="networkTimeout"
+						type="number"
+						min="1"
+						formControlName="network_timeout"
+						class="form-control"
+						[disabled]="!isNetworkMethod()"
+						inputmode="numeric"
+					/>
+				</div>
+			</div>
+		</section>
+
+		<section class="config-group" [class.disabled-group]="!isUsbMethod()">
+			<div class="config-group-header">
+				<h2>Configuración USB</h2>
+				<p>Aplica cuando el método seleccionado es USB.</p>
+			</div>
+
+			<div class="config-grid">
+				<div class="form-group">
+					<label for="usbMode">Modo USB:</label>
+					<input
+						id="usbMode"
+						type="text"
+						formControlName="usb_mode"
+						placeholder="Ej: WINDOWS_DEFAULT"
+						class="form-control"
+						[disabled]="!isUsbMethod()"
+					/>
+				</div>
+
+				<div class="form-group">
+					<label for="usbPrinterName">Nombre de impresora:</label>
+					<input
+						id="usbPrinterName"
+						type="text"
+						formControlName="usb_printer_name"
+						placeholder="Vacío para WINDOWS_DEFAULT"
+						class="form-control"
+						[disabled]="!isUsbMethod()"
+					/>
+				</div>
+			</div>
+		</section>
+
+		<div class="form-actions">
+			<button
+				type="button"
+				(click)="onSubmit()"
+				[disabled]="!isFormValid() || isSaving"
+				class="btn btn-primary"
+			>
+				{{ isSaving ? 'Guardando...' : 'Guardar Configuración de Impresora' }}
+			</button>
+
+			<button
+				type="button"
+				(click)="onReset()"
+				[disabled]="isSaving"
+				class="btn btn-secondary"
+			>
+				Restablecer
+			</button>
+		</div>
+	</form>
+</div>

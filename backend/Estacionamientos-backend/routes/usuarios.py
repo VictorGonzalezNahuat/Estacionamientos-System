@@ -97,6 +97,8 @@ def eliminar_usuario(codigo: int, current_user: Usuario = Depends(get_current_us
     return {"mensaje": "Usuario eliminado correctamente"}
 
 
+# TODO(refactor): Resolver mismatch entre path param (`usuario_id`) y argumento (`codigo_usuario`).
+# TODO(refactor): Unificar convención de identificador (id interno vs codigo) para evitar ambigüedad en este endpoint.
 @router.patch("/{usuario_id}/reset-password")
 def reset_password(
     codigo_usuario: int,

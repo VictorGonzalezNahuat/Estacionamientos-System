@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from datetime import date, datetime, time
+import logging
 from typing import Optional
 
 from fastapi import HTTPException
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
-
 from core.datetime_utils import now_local_naive
-from core.payment_provider import ParsedWebhookEvent
+from core.payment_provider import ParsedWebhookEvent, get_payment_provider
 from core.parking_pricing import calcular_importe_por_minutos, calcular_minutos_estadia
 from core.parking_ticket_service import (
     construir_ticket_salida,
@@ -18,11 +18,16 @@ from core.parking_ticket_service import (
 )
 from models.current_estacionamiento import CurrentEstacionamiento
 from models.history_estacionamiento import HistoryEstacionamiento
+from models.invoice_request import InvoiceRequest
 from models.payment_transaction import PaymentTransaction
 from models.state_estacionamiento import StateEstacionamiento
 from models.tarifa import Tarifa
+from models.ticket_cancelado import TicketCancelado
 from models.turno import Turno
 from models.usuario import Usuario
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -128,7 +133,7 @@ def _resolver_nombre_cajero(db: Session, historial: HistoryEstacionamiento) -> s
         if encargado_historial and getattr(encargado_historial, "nombre", None):
             encargado_nombre = encargado_historial.nombre
 
-    return encargado_nombre
+    return encargado_nombre or "SISTEMA"
 
 
 def _crear_contexto_salida(db: Session, current_user: Usuario, placa: str, metodo_pago: str = "efectivo") -> ParkingExitContext:
@@ -187,7 +192,12 @@ def _cerrar_vehiculo(db: Session, placa: str) -> None:
         db.delete(vehiculo)
 
 
-def _construir_ticket_salida_historial(historial: HistoryEstacionamiento, cajero_nombre: str, etiqueta: str) -> bytes:
+def _construir_ticket_salida_historial(
+    historial: HistoryEstacionamiento,
+    cajero_nombre: str,
+    etiqueta: str,
+    leyenda_reimpresion: str | None = None,
+) -> bytes:
     entrada = datetime.combine(historial.fecha_entrada, historial.hora_entrada)
     salida_historial_dt = datetime.combine(historial.fecha_salida, historial.hora_salida)
     minutos_estadia = max(1, int((salida_historial_dt - entrada).total_seconds() / 60))
@@ -203,7 +213,30 @@ def _construir_ticket_salida_historial(historial: HistoryEstacionamiento, cajero
         cajero=cajero_nombre,
         metodo_pago="En linea" if historial.metodo_pago == "tarjeta" else "Efectivo",
         etiqueta=etiqueta,
+        leyenda_reimpresion=leyenda_reimpresion,
     )
+
+
+def reimprimir_ticket_salida_desde_historial(
+    db: Session,
+    historial: HistoryEstacionamiento,
+    leyenda_reimpresion: str | None = None,
+) -> tuple[bool, str, int]:
+    cajero_nombre = _resolver_nombre_cajero(db, historial)
+    ticket_bytes = _construir_ticket_salida_historial(
+        historial,
+        cajero_nombre,
+        "ORIGINAL",
+        leyenda_reimpresion=leyenda_reimpresion,
+    )
+    ticket_copia_bytes = _construir_ticket_salida_historial(
+        historial,
+        cajero_nombre,
+        "COPIA",
+        leyenda_reimpresion=leyenda_reimpresion,
+    )
+    impreso_ok, impresion_mensaje = imprimir_lote_tickets_salida([ticket_bytes, ticket_copia_bytes])
+    return impreso_ok, impresion_mensaje, 2
 
 
 def registrar_salida_efectivo(db: Session, current_user: Usuario, placa: str) -> ParkingExitResult:
@@ -255,48 +288,51 @@ def registrar_salida_efectivo(db: Session, current_user: Usuario, placa: str) ->
     )
 
 
-def registrar_salida_tarjeta_pendiente(
+def _resolver_salida_tarjeta_pendiente_existente(
     db: Session,
-    current_user: Usuario,
-    placa: str,
-    provider_name: str,
-    email: str | None = None,
-) -> ParkingExitResult:
-    context = _crear_contexto_salida(db, current_user, placa, metodo_pago="tarjeta")
-    selected_provider = (provider_name or "stripe").strip().lower()
-
+    context: ParkingExitContext,
+    selected_provider: str,
+) -> ParkingExitResult | None:
     tx_pendiente = db.query(PaymentTransaction).filter(
         PaymentTransaction.placa == context.placa,
         PaymentTransaction.estado == PaymentTransaction.ESTADO_PENDIENTE,
     ).order_by(desc(PaymentTransaction.created_at)).first()
 
-    if tx_pendiente:
-        metadata_existente = _metadata_from_transaction(tx_pendiente)
-        checkout_existente = metadata_existente.get("checkout_url")
-        provider_existente = metadata_existente.get("provider", selected_provider)
+    if not tx_pendiente:
+        return None
 
-        historial_pendiente = db.query(HistoryEstacionamiento).filter(
-            HistoryEstacionamiento.payment_transaction_id == tx_pendiente.id,
-            HistoryEstacionamiento.pagado == False,
-        ).first()
+    metadata_existente = _metadata_from_transaction(tx_pendiente)
+    checkout_existente = metadata_existente.get("checkout_url")
+    provider_existente = metadata_existente.get("provider", selected_provider)
 
-        if checkout_existente and historial_pendiente:
-            return ParkingExitResult(
-                mensaje="Ya existe una salida pendiente de pago para esta placa.",
-                preferencia_id=tx_pendiente.preferencia_id,
-                checkout_url=checkout_existente,
-                provider=provider_existente,
-                placa=tx_pendiente.placa,
-                monto=float(tx_pendiente.monto),
-                fecha_salida=str(historial_pendiente.fecha_salida),
-                hora_salida=str(historial_pendiente.hora_salida),
-                minutos_estadia=context.total_minutos,
-                estado="pendiente",
-                history_estacionamiento_id=historial_pendiente.id,
-            )
+    historial_pendiente = db.query(HistoryEstacionamiento).filter(
+        HistoryEstacionamiento.payment_transaction_id == tx_pendiente.id,
+        HistoryEstacionamiento.pagado == False,
+    ).first()
 
-    from core.payment_provider import get_payment_provider
+    if not checkout_existente or not historial_pendiente:
+        return None
 
+    return ParkingExitResult(
+        mensaje="Ya existe una salida pendiente de pago para esta placa.",
+        preferencia_id=tx_pendiente.preferencia_id,
+        checkout_url=checkout_existente,
+        provider=provider_existente,
+        placa=tx_pendiente.placa,
+        monto=float(tx_pendiente.monto),
+        fecha_salida=str(historial_pendiente.fecha_salida),
+        hora_salida=str(historial_pendiente.hora_salida),
+        minutos_estadia=context.total_minutos,
+        estado="pendiente",
+        history_estacionamiento_id=historial_pendiente.id,
+    )
+
+
+def _crear_checkout_tarjeta(
+    context: ParkingExitContext,
+    selected_provider: str,
+    email: str | None,
+) -> tuple[str, str]:
     try:
         preferencia_id, checkout_url = get_payment_provider(selected_provider).create_checkout(
             placa=context.placa,
@@ -306,6 +342,16 @@ def registrar_salida_tarjeta_pendiente(
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Error al crear checkout: {str(exc)}") from exc
 
+    return preferencia_id, checkout_url
+
+
+def _persistir_salida_tarjeta_pendiente(
+    db: Session,
+    context: ParkingExitContext,
+    selected_provider: str,
+    preferencia_id: str,
+    checkout_url: str,
+) -> tuple[PaymentTransaction, HistoryEstacionamiento]:
     metadata_mp = PaymentTransaction.build_metadata(
         {
             PaymentTransaction.METADATA_PROVIDER_KEY: selected_provider,
@@ -326,7 +372,10 @@ def registrar_salida_tarjeta_pendiente(
 
     historial = _crear_historial(db, context, payment_transaction_id=payment_transaction.id, pagado=False)
     db.commit()
+    return payment_transaction, historial
 
+
+def _generar_ticket_salida_pendiente(context: ParkingExitContext, historial: HistoryEstacionamiento) -> str:
     folio = str(historial.id)
     ticket_bytes = construir_ticket_salida(
         folio=folio,
@@ -336,10 +385,45 @@ def registrar_salida_tarjeta_pendiente(
         minutos_estadia=context.total_minutos,
         total_pagado=float(context.importe),
         cajero=context.cajero_nombre,
-        metodo_pago="En linea",
+        metodo_pago="Tarjeta",
         etiqueta="ORIGINAL",
     )
     ticket_path = guardar_ticket_bytes("salida", context.placa, context.salida_dt, ticket_bytes, suffix="_pendiente")
+    return str(ticket_path)
+
+def registrar_salida_tarjeta_pendiente(
+    db: Session,
+    current_user: Usuario,
+    placa: str,
+    provider_name: str,
+    email: str | None = None,
+) -> ParkingExitResult:
+    context = _crear_contexto_salida(db, current_user, placa, metodo_pago="tarjeta")
+    selected_provider = (provider_name or "stripe").strip().lower()
+
+    pendiente_existente = _resolver_salida_tarjeta_pendiente_existente(
+        db=db,
+        context=context,
+        selected_provider=selected_provider,
+    )
+    if pendiente_existente:
+        return pendiente_existente
+
+    preferencia_id, checkout_url = _crear_checkout_tarjeta(
+        context=context,
+        selected_provider=selected_provider,
+        email=email,
+    )
+
+    payment_transaction, historial = _persistir_salida_tarjeta_pendiente(
+        db=db,
+        context=context,
+        selected_provider=selected_provider,
+        preferencia_id=preferencia_id,
+        checkout_url=checkout_url,
+    )
+
+    ticket_path = _generar_ticket_salida_pendiente(context=context, historial=historial)
 
     return ParkingExitResult(
         mensaje="Salida registrada. Pendiente pago por tarjeta. Completa el pago para finalizar.",
@@ -351,11 +435,135 @@ def registrar_salida_tarjeta_pendiente(
         fecha_salida=str(context.fecha_salida),
         hora_salida=str(context.hora_salida),
         minutos_estadia=context.total_minutos,
-        ticket_bin=str(ticket_path),
+        ticket_bin=ticket_path,
         estado="pendiente",
         payment_transaction_id=payment_transaction.id,
         history_estacionamiento_id=historial.id,
     )
+
+
+def _buscar_transaccion_por_lookup(db: Session, parsed: ParsedWebhookEvent) -> PaymentTransaction | None:
+    if parsed.lookup_field == "preferencia_id":
+        return db.query(PaymentTransaction).filter(
+            PaymentTransaction.preferencia_id == parsed.lookup_value
+        ).first()
+
+    if parsed.lookup_field == "placa":
+        payment_transaction = db.query(PaymentTransaction).filter(
+            PaymentTransaction.placa == parsed.lookup_value,
+            PaymentTransaction.estado == PaymentTransaction.ESTADO_PENDIENTE,
+        ).order_by(desc(PaymentTransaction.created_at)).first()
+
+        if payment_transaction:
+            return payment_transaction
+
+        return db.query(PaymentTransaction).filter(
+            PaymentTransaction.placa == parsed.lookup_value
+        ).order_by(desc(PaymentTransaction.created_at)).first()
+
+    raise HTTPException(status_code=400, detail="lookup_field no soportado")
+
+
+def _actualizar_metadata_webhook(payment_transaction: PaymentTransaction, provider, parsed: ParsedWebhookEvent) -> None:
+    payment_transaction.webhook_timestamp = datetime.utcnow()
+    existing_metadata = _metadata_from_transaction(payment_transaction)
+    merged_metadata = {
+        **existing_metadata,
+        PaymentTransaction.METADATA_PROVIDER_EVENT_KEY: parsed.event_payload or {},
+    }
+    payment_transaction.metadata_mp = provider.serialize_event(merged_metadata)
+
+
+def _resolver_accion_transicion(estado_actual: str, normalized_status: str | None) -> str:
+    if estado_actual == PaymentTransaction.ESTADO_CANCELADO:
+        return "ignored_cancelled"
+
+    if normalized_status == "completado":
+        if estado_actual == PaymentTransaction.ESTADO_COMPLETADO:
+            return "processed_already"
+        return "mark_completed"
+
+    if normalized_status == "rechazado":
+        if estado_actual == PaymentTransaction.ESTADO_COMPLETADO:
+            return "keep_current"
+        return "mark_rejected"
+
+    if normalized_status == "cancelado":
+        if estado_actual == PaymentTransaction.ESTADO_COMPLETADO:
+            return "keep_current"
+        return "mark_cancelled"
+
+    if estado_actual == PaymentTransaction.ESTADO_COMPLETADO:
+        return "keep_current"
+    return "mark_pending"
+
+
+def _aplicar_transicion_estado(payment_transaction: PaymentTransaction, parsed: ParsedWebhookEvent, accion: str) -> None:
+    if accion in {"processed_already", "mark_completed"}:
+        if parsed.provider_transaction_id and not payment_transaction.payment_intent:
+            payment_transaction.payment_intent = parsed.provider_transaction_id
+
+    if accion == "mark_completed":
+        payment_transaction.estado = PaymentTransaction.ESTADO_COMPLETADO
+    elif accion == "mark_rejected":
+        payment_transaction.estado = PaymentTransaction.ESTADO_RECHAZADO
+    elif accion == "mark_cancelled":
+        payment_transaction.estado = PaymentTransaction.ESTADO_CANCELADO
+    elif accion == "mark_pending":
+        payment_transaction.estado = PaymentTransaction.ESTADO_PENDIENTE
+
+
+def _clasificar_error_impresion(exc: Exception) -> tuple[str, str]:
+    if isinstance(exc, TimeoutError):
+        return "transitorio", "timeout al imprimir"
+
+    if isinstance(exc, (ConnectionError, OSError)):
+        return "transitorio", "fallo de conectividad con impresora"
+
+    if isinstance(exc, (ValueError, TypeError)):
+        return "permanente", "configuracion o datos invalidos para impresion"
+
+    return "desconocido", "error no clasificado de impresion"
+
+
+def _reportar_error_impresion(exc: Exception) -> None:
+    categoria, causa = _clasificar_error_impresion(exc)
+    print(f"Error imprimiendo ticket [{categoria}] {causa}: {exc}")
+
+
+def _finalizar_salida_pagada_tarjeta(db: Session, historial: HistoryEstacionamiento) -> None:
+    if int(getattr(historial, "cancelado", 0)) == 1:
+        return
+
+    historial.pagado = True
+    _cerrar_vehiculo(db, historial.placa)
+
+    try:
+        cajero_nombre = _resolver_nombre_cajero(db, historial)
+        ticket_bytes = _construir_ticket_salida_historial(historial, cajero_nombre, "ORIGINAL")
+        ticket_copia_bytes = _construir_ticket_salida_historial(historial, cajero_nombre, "COPIA")
+
+        impreso_ok, impresion_mensaje = imprimir_lote_tickets_salida([ticket_bytes, ticket_copia_bytes])
+        if not impreso_ok:
+            print(f"Advertencia impresion salida tarjeta | {impresion_mensaje}")
+    except TimeoutError as exc:
+        _reportar_error_impresion(exc)
+    except (ConnectionError, OSError) as exc:
+        _reportar_error_impresion(exc)
+    except (ValueError, TypeError) as exc:
+        _reportar_error_impresion(exc)
+    except Exception as exc:
+        _reportar_error_impresion(exc)
+
+
+def _respuesta_webhook(status: str, provider, parsed: ParsedWebhookEvent, payment_transaction: PaymentTransaction) -> dict:
+    return {
+        "status": status,
+        "provider": provider.provider_name,
+        "lookup_field": parsed.lookup_field,
+        "lookup_value": parsed.lookup_value,
+        "transaction_status": payment_transaction.estado,
+    }
 
 
 def procesar_webhook_pago(db: Session, provider, parsed: ParsedWebhookEvent) -> dict:
@@ -365,100 +573,199 @@ def procesar_webhook_pago(db: Session, provider, parsed: ParsedWebhookEvent) -> 
     if not parsed.lookup_field or not parsed.lookup_value:
         raise HTTPException(status_code=400, detail="Evento sin referencia para buscar transaccion")
 
-    if parsed.lookup_field == "preferencia_id":
-        payment_transaction = db.query(PaymentTransaction).filter(
-            PaymentTransaction.preferencia_id == parsed.lookup_value
-        ).first()
-    elif parsed.lookup_field == "placa":
-        payment_transaction = db.query(PaymentTransaction).filter(
-            PaymentTransaction.placa == parsed.lookup_value,
-            PaymentTransaction.estado == PaymentTransaction.ESTADO_PENDIENTE,
-        ).order_by(desc(PaymentTransaction.created_at)).first()
-
-        if not payment_transaction:
-            payment_transaction = db.query(PaymentTransaction).filter(
-                PaymentTransaction.placa == parsed.lookup_value
-            ).order_by(desc(PaymentTransaction.created_at)).first()
-    else:
-        raise HTTPException(status_code=400, detail="lookup_field no soportado")
+    payment_transaction = _buscar_transaccion_por_lookup(db=db, parsed=parsed)
 
     if not payment_transaction:
-        print(f"No se encontro transaccion para {parsed.lookup_field}: {parsed.lookup_value}")
+        logger.warning(
+            "webhook_not_found provider=%s lookup_field=%s lookup_value=%s",
+            getattr(provider, "provider_name", "unknown"),
+            parsed.lookup_field,
+            parsed.lookup_value,
+        )
         return {"status": "not_found"}
 
-    payment_transaction.webhook_timestamp = datetime.utcnow()
-    existing_metadata = _metadata_from_transaction(payment_transaction)
-    merged_metadata = {
-        **existing_metadata,
-        PaymentTransaction.METADATA_PROVIDER_EVENT_KEY: parsed.event_payload or {},
-    }
-    payment_transaction.metadata_mp = provider.serialize_event(merged_metadata)
+    _actualizar_metadata_webhook(payment_transaction=payment_transaction, provider=provider, parsed=parsed)
 
     historial = db.query(HistoryEstacionamiento).filter(
         HistoryEstacionamiento.placa == payment_transaction.placa,
         HistoryEstacionamiento.payment_transaction_id == payment_transaction.id,
     ).first()
 
-    if payment_transaction.estado == PaymentTransaction.ESTADO_CANCELADO:
+    if historial and int(getattr(historial, "cancelado", 0)) == 1:
+        payment_transaction.estado = PaymentTransaction.ESTADO_CANCELADO
         db.commit()
-        return {
-            "status": "ignored_cancelled",
-            "provider": provider.provider_name,
-            "lookup_field": parsed.lookup_field,
-            "lookup_value": parsed.lookup_value,
-            "transaction_status": payment_transaction.estado,
-        }
+        return _respuesta_webhook(
+            status="ignored_cancelled_ticket",
+            provider=provider,
+            parsed=parsed,
+            payment_transaction=payment_transaction,
+        )
 
-    if parsed.normalized_status == "completado":
-        if payment_transaction.estado == PaymentTransaction.ESTADO_COMPLETADO:
-            if parsed.provider_transaction_id and not payment_transaction.payment_intent:
-                payment_transaction.payment_intent = parsed.provider_transaction_id
-            db.commit()
-            return {
-                "status": "processed_already",
-                "provider": provider.provider_name,
-                "lookup_field": parsed.lookup_field,
-                "lookup_value": parsed.lookup_value,
-                "transaction_status": payment_transaction.estado,
-            }
+    accion = _resolver_accion_transicion(
+        estado_actual=payment_transaction.estado,
+        normalized_status=parsed.normalized_status,
+    )
 
-        payment_transaction.estado = PaymentTransaction.ESTADO_COMPLETADO
-        if parsed.provider_transaction_id:
-            payment_transaction.payment_intent = parsed.provider_transaction_id
+    if accion == "ignored_cancelled":
+        db.commit()
+        return _respuesta_webhook(
+            status="ignored_cancelled",
+            provider=provider,
+            parsed=parsed,
+            payment_transaction=payment_transaction,
+        )
 
-        if historial:
-            historial.pagado = True
-            _cerrar_vehiculo(db, historial.placa)
+    _aplicar_transicion_estado(payment_transaction=payment_transaction, parsed=parsed, accion=accion)
 
-            try:
-                cajero_nombre = _resolver_nombre_cajero(db, historial)
-                ticket_bytes = _construir_ticket_salida_historial(historial, cajero_nombre, "ORIGINAL")
-                ticket_copia_bytes = _construir_ticket_salida_historial(historial, cajero_nombre, "COPIA")
+    if accion == "processed_already":
+        db.commit()
+        return _respuesta_webhook(
+            status="processed_already",
+            provider=provider,
+            parsed=parsed,
+            payment_transaction=payment_transaction,
+        )
 
-                impreso_ok, impresion_mensaje = imprimir_lote_tickets_salida([ticket_bytes, ticket_copia_bytes])
-                if not impreso_ok:
-                    print(f"Advertencia impresion salida tarjeta | {impresion_mensaje}")
-            except Exception as exc:
-                print(f"Error imprimiendo ticket: {exc}")
-
-    elif parsed.normalized_status == "rechazado":
-        if payment_transaction.estado != PaymentTransaction.ESTADO_COMPLETADO:
-            payment_transaction.estado = PaymentTransaction.ESTADO_RECHAZADO
-    elif parsed.normalized_status == "cancelado":
-        if payment_transaction.estado != PaymentTransaction.ESTADO_COMPLETADO:
-            payment_transaction.estado = PaymentTransaction.ESTADO_CANCELADO
-    else:
-        if payment_transaction.estado != PaymentTransaction.ESTADO_COMPLETADO:
-            payment_transaction.estado = PaymentTransaction.ESTADO_PENDIENTE
+    if accion == "mark_completed" and historial:
+        _finalizar_salida_pagada_tarjeta(db=db, historial=historial)
 
     db.commit()
 
+    return _respuesta_webhook(
+        status="processed",
+        provider=provider,
+        parsed=parsed,
+        payment_transaction=payment_transaction,
+    )
+
+
+def _motivo_cancelacion_normalizado(motivo: str | None) -> str:
+    motivo_limpio = (motivo or "").strip()
+    if not motivo_limpio:
+        raise HTTPException(status_code=400, detail="El motivo de cancelacion es obligatorio")
+    if len(motivo_limpio) > 500:
+        raise HTTPException(status_code=400, detail="El motivo de cancelacion no puede exceder 500 caracteres")
+    return motivo_limpio
+
+
+def _existe_factura_emitida_o_en_proceso(db: Session, history_id: int) -> bool:
+    invoice_request = (
+        db.query(InvoiceRequest)
+        .filter(
+            InvoiceRequest.source_type == InvoiceRequest.SOURCE_HISTORY_EXIT,
+            InvoiceRequest.source_id == str(history_id),
+            InvoiceRequest.status.in_([InvoiceRequest.STATUS_PROCESSING, InvoiceRequest.STATUS_ISSUED]),
+        )
+        .first()
+    )
+    return bool(invoice_request)
+
+
+def _registrar_cancelacion_historial(
+    db: Session,
+    historial: HistoryEstacionamiento,
+    payment_transaction: PaymentTransaction | None,
+    cancelado_por: int,
+    motivo: str,
+) -> None:
+    historial.cancelado = 1
+
+    registro_cancelacion = TicketCancelado(
+        history_estacionamiento_id=historial.id,
+        payment_transaction_id=payment_transaction.id if payment_transaction else None,
+        motivo=motivo,
+        cancelado_por=cancelado_por,
+        fecha_cancelacion=datetime.utcnow(),
+    )
+    db.add(registro_cancelacion)
+
+
+def _resolver_provider_desde_transaccion(payment_transaction: PaymentTransaction, provider_name: str | None) -> str:
+    if provider_name and provider_name.strip():
+        return provider_name.strip().lower()
+
+    metadata = _metadata_from_transaction(payment_transaction)
+    provider_metadata = str(metadata.get(PaymentTransaction.METADATA_PROVIDER_KEY, "")).strip().lower()
+    return provider_metadata or "stripe"
+
+
+def cancelar_ticket_por_historial(
+    db: Session,
+    historial_id: int,
+    current_user_id: int,
+    motivo: str,
+    provider_name: str | None = None,
+) -> dict:
+    motivo_limpio = _motivo_cancelacion_normalizado(motivo)
+
+    historial = db.query(HistoryEstacionamiento).filter(HistoryEstacionamiento.id == historial_id).first()
+    if not historial:
+        raise HTTPException(status_code=404, detail="Registro historico no encontrado")
+
+    if int(getattr(historial, "cancelado", 0)) == 1:
+        raise HTTPException(status_code=409, detail="El ticket ya esta cancelado")
+
+    if historial.corte_id is not None:
+        raise HTTPException(status_code=409, detail="No se puede cancelar un ticket con corte asignado")
+
+    if _existe_factura_emitida_o_en_proceso(db=db, history_id=historial.id):
+        raise HTTPException(status_code=409, detail="No se puede cancelar un ticket ya facturado o en proceso de facturacion")
+
+    payment_transaction = None
+    cancelado_remoto = False
+    detalle_cancelacion = "Cancelacion local exitosa"
+    provider_normalized = provider_name.strip().lower() if provider_name else None
+
+    if historial.payment_transaction_id is not None:
+        payment_transaction = db.query(PaymentTransaction).filter(
+            PaymentTransaction.id == historial.payment_transaction_id
+        ).first()
+
+        if payment_transaction:
+            provider_normalized = _resolver_provider_desde_transaccion(payment_transaction, provider_normalized)
+            provider = get_payment_provider(provider_normalized)
+            provider_normalized = getattr(provider, "provider_name", provider_normalized)
+
+            if payment_transaction.estado != PaymentTransaction.ESTADO_CANCELADO:
+                try:
+                    remote_result = provider.cancel_checkout(payment_transaction.preferencia_id)
+                    cancelado_remoto = bool(remote_result.get("cancelled_remote", False))
+                    detalle_cancelacion = remote_result.get("message") or detalle_cancelacion
+                except Exception as exc:
+                    detalle_cancelacion = f"No se pudo cancelar remoto: {str(exc)}"
+
+            payment_transaction.estado = PaymentTransaction.ESTADO_CANCELADO
+            metadata = {
+                **_metadata_from_transaction(payment_transaction),
+                "cancelled_remote": cancelado_remoto,
+                "cancel_provider": provider_normalized,
+                "cancel_reason": motivo_limpio,
+                "cancel_detail": detalle_cancelacion,
+                "cancelled_at": datetime.utcnow().isoformat(),
+                "cancelled_by_user_id": current_user_id,
+                "cancelled_history_id": historial.id,
+            }
+            payment_transaction.metadata_mp = PaymentTransaction.build_metadata(metadata)
+
+    _registrar_cancelacion_historial(
+        db=db,
+        historial=historial,
+        payment_transaction=payment_transaction,
+        cancelado_por=current_user_id,
+        motivo=motivo_limpio,
+    )
+    db.commit()
+
+    preferencia_id = payment_transaction.preferencia_id if payment_transaction else None
     return {
-        "status": "processed",
-        "provider": provider.provider_name,
-        "lookup_field": parsed.lookup_field,
-        "lookup_value": parsed.lookup_value,
-        "transaction_status": payment_transaction.estado,
+        "preferencia_id": preferencia_id,
+        "estado_transaccion": payment_transaction.estado if payment_transaction else "sin_transaccion",
+        "cancelado_local": True,
+        "cancelado_remoto": cancelado_remoto,
+        "provider": provider_normalized,
+        "motivo": motivo_limpio,
+        "detalle": detalle_cancelacion,
+        "history_estacionamiento_id": historial.id,
     }
 
 
@@ -466,65 +773,26 @@ def cancelar_transaccion_pago(
     db: Session,
     preferencia_id: str,
     provider_name: str,
-    motivo: str | None = None,
+    current_user_id: int,
+    motivo: str,
 ) -> dict:
-    from core.payment_provider import get_payment_provider
-
     payment_transaction = db.query(PaymentTransaction).filter(
         PaymentTransaction.preferencia_id == preferencia_id
     ).first()
 
     if not payment_transaction:
         raise HTTPException(status_code=404, detail="Transaccion no encontrada")
+    historial = db.query(HistoryEstacionamiento).filter(
+        HistoryEstacionamiento.payment_transaction_id == payment_transaction.id
+    ).order_by(desc(HistoryEstacionamiento.id)).first()
 
-    provider = get_payment_provider(provider_name)
-    provider_normalized = getattr(provider, "provider_name", provider_name)
+    if not historial:
+        raise HTTPException(status_code=404, detail="No existe ticket historico asociado a la transaccion")
 
-    if payment_transaction.estado == PaymentTransaction.ESTADO_COMPLETADO:
-        raise HTTPException(status_code=409, detail="No se puede cancelar una transaccion completada")
-
-    metadata = _metadata_from_transaction(payment_transaction)
-    detalle_cancelacion = None
-    cancelado_remoto = False
-
-    if payment_transaction.estado == PaymentTransaction.ESTADO_CANCELADO:
-        existing_reason = metadata.get("cancel_reason") if isinstance(metadata, dict) else None
-        return {
-            "preferencia_id": payment_transaction.preferencia_id,
-            "estado_transaccion": payment_transaction.estado,
-            "cancelado_local": True,
-            "cancelado_remoto": bool(metadata.get("cancelled_remote", False)),
-            "provider": provider_normalized,
-            "motivo": existing_reason,
-            "detalle": "La transaccion ya estaba cancelada",
-        }
-
-    try:
-        remote_result = provider.cancel_checkout(payment_transaction.preferencia_id)
-        cancelado_remoto = bool(remote_result.get("cancelled_remote", False))
-        detalle_cancelacion = remote_result.get("message")
-    except Exception as exc:
-        # No bloquea la cancelacion local; se registra para trazabilidad.
-        detalle_cancelacion = f"No se pudo cancelar remoto: {str(exc)}"
-
-    payment_transaction.estado = PaymentTransaction.ESTADO_CANCELADO
-    metadata = {
-        **(metadata if isinstance(metadata, dict) else {}),
-        "cancelled_remote": cancelado_remoto,
-        "cancel_provider": provider_normalized,
-        "cancel_reason": motivo,
-        "cancel_detail": detalle_cancelacion,
-        "cancelled_at": datetime.utcnow().isoformat(),
-    }
-    payment_transaction.metadata_mp = PaymentTransaction.build_metadata(metadata)
-    db.commit()
-
-    return {
-        "preferencia_id": payment_transaction.preferencia_id,
-        "estado_transaccion": payment_transaction.estado,
-        "cancelado_local": True,
-        "cancelado_remoto": cancelado_remoto,
-        "provider": provider_normalized,
-        "motivo": motivo,
-        "detalle": detalle_cancelacion,
-    }
+    return cancelar_ticket_por_historial(
+        db=db,
+        historial_id=historial.id,
+        current_user_id=current_user_id,
+        motivo=motivo,
+        provider_name=provider_name,
+    )

@@ -14,6 +14,7 @@ from core.cortes_config import (
 from core.sync_scheduler import start_sync_scheduler, stop_sync_scheduler
 from core.security import get_user_admin
 from models.usuario import Usuario
+from printer.print import get_printer_config_values, update_printer_config_values
 from schemas.configuracion import (
     ConfiguracionResponse,
     ConfiguracionUpdate,
@@ -21,6 +22,8 @@ from schemas.configuracion import (
     OtherConfigUpdate,
     CortesConfiguracionResponse,
     CortesConfiguracionUpdate,
+    PrinterConfigResponse,
+    PrinterConfigUpdate,
 )
 
 
@@ -31,6 +34,25 @@ router = APIRouter()
 def obtener_configuracion(current_user: Usuario = Depends(get_user_admin)):
     """Obtiene toda la configuracion del sistema"""
     return get_public_config_values()
+
+
+@router.get("/printer", response_model=PrinterConfigResponse)
+def obtener_configuracion_printer(current_user: Usuario = Depends(get_user_admin)):
+    """Obtiene la configuracion de impresion desde config_printer.json."""
+    return get_printer_config_values()
+
+
+@router.patch("/printer", response_model=PrinterConfigResponse)
+def editar_configuracion_printer(
+    cambios: PrinterConfigUpdate,
+    current_user: Usuario = Depends(get_user_admin),
+):
+    """Actualiza parcialmente la configuracion de impresion en config_printer.json."""
+    payload = cambios.model_dump(exclude_unset=True)
+    try:
+        return update_printer_config_values(payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.patch("/base-datos", response_model=ConfiguracionResponse)

@@ -21,6 +21,7 @@ class HistoryEstacionamiento(Base):
     importe: Mapped[float] = mapped_column(Float)
     metodo_pago: Mapped[str] = mapped_column(String(50), default="efectivo")  # 'efectivo' | 'tarjeta'
     pagado: Mapped[bool] = mapped_column(Boolean, default=False)  # True cuando pago confirmado
+    cancelado: Mapped[int] = mapped_column(Integer, default=0, nullable=False, index=True)  # 0 activo | 1 cancelado
     payment_transaction_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)  # FK a payment_transactions
     corte_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     updated_at: Mapped[datetime | None] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=True)

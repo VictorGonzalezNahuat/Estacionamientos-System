@@ -1,0 +1,106 @@
+<section class="reimpresion-page">
+	<div class="background-overlay"></div>
+	<div class="reimpresion-shell">
+		<header class="page-header">
+			<div>
+				<p class="eyebrow">Dashboard / Reimpresion de tickets</p>
+				<h1>{{ title }}</h1>
+				<p class="page-copy">{{ description }}</p>
+			</div>
+			<div class="header-badge">
+				<span>{{ recordCountLabel }}</span>
+				<strong>{{ lastUpdated() }}</strong>
+			</div>
+		</header>
+
+		<section class="controls-card">
+			<div class="control-group control-group--type">
+				<label for="ticket-type">Tipo de ticket</label>
+				<select
+					id="ticket-type"
+					class="field-select"
+					[value]="ticketType()"
+					(change)="onTicketTypeChange($any($event.target).value)"
+				>
+					<option value="entrada">Ticket de entrada</option>
+					<option value="salida">Ticket de salida</option>
+				</select>
+			</div>
+
+			<div class="control-group control-group--id">
+				<label for="ticket-id">Id a reimprimir</label>
+				<input
+					id="ticket-id"
+					type="number"
+					min="0"
+					class="field-input"
+					placeholder="Captura el id"
+					[value]="reimpresionId()"
+					(input)="onIdInput($event)"
+				/>
+			</div>
+
+			<div class="control-group control-group--action">
+				<label>&nbsp;</label>
+				<button type="button" class="primary-btn" (click)="reimprimirTicket()" [disabled]="loading()">
+					{{ loading() ? 'Cargando...' : 'Reimprimir Ticket' }}
+				</button>
+			</div>
+		</section>
+
+		<section class="table-card">
+			@if (loading()) {
+				<div class="empty-state">
+					<h2>Cargando registros...</h2>
+					<p>Estamos obteniendo los ultimos tickets disponibles para reimpresion.</p>
+				</div>
+			} @else if (records().length > 0) {
+				<div class="table-wrapper">
+					<table>
+						<thead>
+							<tr>
+								<th>Id</th>
+								<th>Placa</th>
+								<th>Encargado</th>
+								<th>Tarifa</th>
+								<th>Turno</th>
+								<th>Fecha entrada</th>
+								<th>Hora entrada</th>
+								<th>Fecha salida</th>
+								<th>Hora salida</th>
+								<th>Importe</th>
+								<th>Metodo pago</th>
+								<th>Pagado</th>
+								<th>Actualizado</th>
+							</tr>
+						</thead>
+						<tbody>
+							@for (record of records(); track record.id + '-' + record.placa) {
+								<tr>
+									<td>{{ record.id }}</td>
+									<td class="cell-plate">{{ record.placa }}</td>
+									<td>{{ record.encargadoId }}</td>
+									<td>{{ record.tarifaId }}</td>
+									<td>{{ record.turnoId }}</td>
+									<td>{{ record.fechaEntrada }}</td>
+									<td>{{ record.horaEntrada }}</td>
+									<td>{{ record.fechaSalida }}</td>
+									<td>{{ record.horaSalida }}</td>
+									<td class="cell-amount">{{ record.importe }}</td>
+									<td>{{ record.metodoPago }}</td>
+									<td>{{ record.pagado }}</td>
+									<td>{{ record.actualizado }}</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			} @else {
+				<div class="empty-state">
+					<h2>No hay registros disponibles</h2>
+					<p>Cuando el backend devuelva tickets disponibles, aparecera el grid con los ultimos 50 registros.</p>
+				</div>
+			}
+		</section>
+	</div>
+</section>

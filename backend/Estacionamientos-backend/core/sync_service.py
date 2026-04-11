@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from models.current_estacionamiento import CurrentEstacionamiento
 from models.history_estacionamiento import HistoryEstacionamiento
+from models.ticket_cancelado import TicketCancelado
 from models.state_estacionamiento import StateEstacionamiento
 from models.sync_state import SyncState
 from models.tarifa import Tarifa
@@ -20,6 +21,7 @@ SYNC_MODELS = [
     Turno,
     CurrentEstacionamiento,
     HistoryEstacionamiento,
+    TicketCancelado,
     StateEstacionamiento,
 ]
 

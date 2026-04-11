@@ -10,6 +10,7 @@ export interface AlertMessage {
   data?: any;
   persistent?: boolean; // si no se debe cerrar sola
   onConfirm?: () => void | boolean | Promise<void | boolean>;
+  onSecondary?: () => void | Promise<void>;
   onCancel?: () => void;
   onClose?: () => void;
   confirmText?: string;
@@ -85,8 +86,13 @@ export class AlertService {
     this.show({ type: 'success', message, onClose });
   }
 
-  error(message: string, onClose?: () => void) {
-    this.show({ type: 'error', message, onClose });
+  error(
+    message: string,
+    onClose?: () => void,
+    secondaryText?: string,
+    onSecondary?: () => void | Promise<void>
+  ) {
+    this.show({ type: 'error', message, onClose, secondaryText, onSecondary });
   }
 
   info(title: string, data: any) {
@@ -508,6 +514,23 @@ export class AlertService {
       this.confirmResolve = null;
     }
     this.close();
+  }
+
+  handleErrorSecondaryAction() {
+    const currentAlert = this.alertState();
+    const action = currentAlert?.onSecondary;
+
+    this.close();
+
+    if (!action) {
+      return;
+    }
+
+    try {
+      void action();
+    } catch (error) {
+      console.error('Error al ejecutar accion secundaria de alerta:', error);
+    }
   }
 
   handlePaymentMethodSelection(value: 'efectivo' | 'tarjeta' | null) {

@@ -147,3 +147,103 @@ class CortesConfiguracionUpdate(BaseModel):
         if value is None:
             return None
         return value.strip()
+
+
+class PrinterNetworkConfig(BaseModel):
+    host: str = Field(min_length=1)
+    port: int = Field(ge=1, le=65535)
+    timeout: int = Field(ge=1)
+
+    @field_validator("host")
+    @classmethod
+    def validate_host(cls, value):
+        host = value.strip()
+        if not host:
+            raise ValueError("host no puede estar vacio")
+        return host
+
+
+class PrinterUsbConfig(BaseModel):
+    mode: str = "WINDOWS_DEFAULT"
+    printer_name: str = ""
+
+    @field_validator("mode")
+    @classmethod
+    def validate_mode(cls, value):
+        mode = value.strip().upper()
+        if mode != "WINDOWS_DEFAULT":
+            raise ValueError("mode actualmente solo soporta WINDOWS_DEFAULT")
+        return mode
+
+    @field_validator("printer_name")
+    @classmethod
+    def normalize_printer_name(cls, value):
+        return value.strip()
+
+
+class PrinterConfigResponse(BaseModel):
+    method: str
+    network: PrinterNetworkConfig
+    usb: PrinterUsbConfig
+
+    @field_validator("method")
+    @classmethod
+    def validate_method(cls, value):
+        method = value.strip().upper()
+        if method not in {"NETWORK", "USB"}:
+            raise ValueError("method debe ser NETWORK o USB")
+        return method
+
+
+class PrinterNetworkConfigUpdate(BaseModel):
+    host: str | None = None
+    port: int | None = Field(None, ge=1, le=65535)
+    timeout: int | None = Field(None, ge=1)
+
+    @field_validator("host")
+    @classmethod
+    def validate_host(cls, value):
+        if value is None:
+            return None
+        host = value.strip()
+        if not host:
+            raise ValueError("host no puede estar vacio")
+        return host
+
+
+class PrinterUsbConfigUpdate(BaseModel):
+    mode: str | None = None
+    printer_name: str | None = None
+
+    @field_validator("mode")
+    @classmethod
+    def validate_mode(cls, value):
+        if value is None:
+            return None
+        mode = value.strip().upper()
+        if mode != "WINDOWS_DEFAULT":
+            raise ValueError("mode actualmente solo soporta WINDOWS_DEFAULT")
+        return mode
+
+    @field_validator("printer_name")
+    @classmethod
+    def normalize_printer_name(cls, value):
+        if value is None:
+            return None
+        return value.strip()
+
+
+class PrinterConfigUpdate(BaseModel):
+    method: str | None = None
+    network: PrinterNetworkConfigUpdate | None = None
+    usb: PrinterUsbConfigUpdate | None = None
+
+    @field_validator("method")
+    @classmethod
+    def validate_method(cls, value):
+        if value is None:
+            return None
+        method = value.strip().upper()
+        if method not in {"NETWORK", "USB"}:
+            raise ValueError("method debe ser NETWORK o USB")
+        return method

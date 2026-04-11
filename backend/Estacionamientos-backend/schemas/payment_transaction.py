@@ -71,7 +71,7 @@ class PagoEstadoDetalleResponse(BaseModel):
 
 class CancelarPagoRequest(BaseModel):
     provider: Optional[Literal["stripe", "mercadopago"]] = None
-    motivo: Optional[str] = None
+    motivo: str
 
 
 class CancelarPagoResponse(BaseModel):

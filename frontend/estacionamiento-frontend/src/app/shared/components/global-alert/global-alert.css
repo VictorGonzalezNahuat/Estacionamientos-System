@@ -236,6 +236,18 @@
   border-color: #4ade80 !important;
 }
 
+.btn-error-secondary {
+  flex: 1;
+  background: #0f766e !important;
+  border: 1px solid #2dd4bf !important;
+  color: #ccfbf1 !important;
+}
+
+.btn-error-secondary:hover {
+  background: #115e59 !important;
+  border-color: #5eead4 !important;
+}
+
 /* PAYMENT METHOD SELECT */
 .custom-alert.payment-method-select {
   border-left: 6px solid #0ea5e9;

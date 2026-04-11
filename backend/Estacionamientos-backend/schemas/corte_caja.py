@@ -26,3 +26,13 @@ class CorteCajaResponse(CorteCajaBase):
 
     class Config:
         from_attributes = True
+
+
+class CorteCajaResumenResponse(BaseModel):
+    turno_id: int
+    total_efectivo: float
+    total_tarjeta: float
+    total_total: float
+
+    class Config:
+        from_attributes = True
