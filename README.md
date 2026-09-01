@@ -1,5 +1,7 @@
 # Sistema de Estacionamientos
 
+![preview](preview_system.png)
+
 Documentacion inicial del proyecto completo (backend + frontend + base de datos + pagos).
 
 ## Estructura general
